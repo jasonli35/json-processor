@@ -4,27 +4,68 @@
 
 #include "Model.h"
 #include "Debug.h"
+#include <string>
 
 namespace ECE141 {
 
 	// ---Model---
+    const char null = '\0';
 
 	Model::Model() {
-		TODO; // Remove once you have implemented this method
+		
 	}
 
 	Model::Model(const Model& aModel) {
-		TODO;
+        *this = aModel;
 	}
 
 	Model &Model::operator=(const Model& aModel) {
-		TODO;
+        data = aModel.data;
 		return *this;
 	}
 
 	ModelQuery Model::createQuery() {
 		return ModelQuery(*this);
 	}
+    
+    bool isInt(const std::string &aString) {
+        size_t index = aString.find('.');
+        if(index != std::string::npos) {return false;}
+        for (size_t i = 0; i < aString.size(); i++) {
+            if (index != i and std::isdigit(static_cast<unsigned char>(aString[i])) == false) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    ECE141::Model::myVariant ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
+        Model::myVariant result;
+        if(aString == "true") {
+            result = true;
+        }
+        else if(aString == "false"){
+            result = false;
+        }
+        else if(aString == "null") {
+            result = null_obj();
+        }
+        else {
+            if(isInt(aString)) {
+                result = stol(aString);
+            }
+            else {
+                double double_result = std::strtod(aString.c_str(), nullptr);
+                if(double_result != 0.0 or aString != "0.0") {
+                    result = double_result;
+                }
+                else {
+                    std::cerr << "Caught unknown exception with unknown data type" << std::endl;
+                }
+            }
+        }
+        return result;
+    }
 
 	bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
 		TODO;

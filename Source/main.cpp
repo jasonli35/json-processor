@@ -6,6 +6,7 @@
 #include "AutoGrader.h"
 #include "Testable.h"
 #include "Debug.h"
+#include "ModelTest.h"
 
 // STUDENT: Be sure to update this path if necessary (should point to the repo directory)
 inline std::string getWorkingDirectoryPath() {
@@ -57,6 +58,8 @@ int main(const int argc, const char* argv[]) {
         return runTest(argc, argv);
 
     // Add your testing code here!
+    ModelTest modelTest;
+    modelTest.runAllTests();
 
     return 0;
 }

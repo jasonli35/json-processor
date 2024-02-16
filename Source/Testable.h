@@ -9,10 +9,12 @@ namespace ECE141
 {
     class Testable
     {
+    protected:
+        size_t count;
     public:
         Testable() = default;
         virtual ~Testable() = default;
-
+        using OptString = std::optional<std::string>;
         // Retrieve the name of a specific test.
         virtual std::optional<std::string> getTestName(size_t anIndex) const = 0;
 

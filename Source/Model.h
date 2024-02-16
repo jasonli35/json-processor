@@ -7,6 +7,8 @@
 #include <string>
 #include <optional>
 #include "JSONParser.h"
+#include <unordered_map>
+#include <list>
 
 namespace ECE141 {
 
@@ -20,6 +22,8 @@ namespace ECE141 {
 
 	};
 
+    struct null_obj{};
+
 	class Model : public JSONListener {
 	public:
 		Model();
@@ -28,6 +32,16 @@ namespace ECE141 {
 		Model &operator=(const Model& aModel);
 
 		ModelQuery createQuery();
+        
+        
+
+        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<Model>, Model>;
+        std::unordered_map<std::string, myVariant> getData() {
+            return data;
+        }
+        
+        static myVariant getVariantNonQuoteType(const std::string &aString);
+        
 
 	protected:
 		// JSONListener methods
@@ -38,6 +52,10 @@ namespace ECE141 {
 
 		// STUDENT: Your model will contain a collection of ModelNode*'s
 		//          Choose your container(s) wisely
+       
+
+        std::unordered_map<std::string, myVariant> data;
+        friend class ModelTest; // not working
 
 	};
 
