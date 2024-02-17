@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <list>
 
+
 namespace ECE141 {
 
 	class ModelQuery; // Forward declare
@@ -36,9 +37,6 @@ namespace ECE141 {
         
 
         using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<Model>, Model>;
-        std::unordered_map<std::string, myVariant> getData() {
-            return data;
-        }
         
         static myVariant getVariantNonQuoteType(const std::string &aString);
         

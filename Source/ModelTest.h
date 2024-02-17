@@ -5,18 +5,17 @@
 //  Created by Jason Li on 2024/2/15.
 //
 
-#ifndef ModelTest_h
-#define ModelTest_h
+#pragma once
+#include "Model.h"
 
-
-#endif /* ModelTest_h */
+namespace ECE141 {
 class ModelTest: public ECE141::Testable {
 public:
     ModelTest() : Testable() {
         count = kList.size();
     }
     
-
+    
     using Callable = bool (ModelTest::*)();
     std::map<std::string, Callable> kList {
         {"test model data", &ModelTest::test_model_data},
@@ -30,12 +29,12 @@ public:
             }
         }
         return std::nullopt;
-                        
+        
     }
     
     bool operator()(const std::string &aName) override {
         return kList.count(aName) ? (this->*kList[aName])() : false;
-
+        
     }
     
     //test and validate
@@ -48,11 +47,12 @@ public:
         }
         ECE141::Model testModel;
         testModel.data;
-
+        
         return true;
     }
     
     
-
+    
 };
+}
 
