@@ -14,17 +14,36 @@
 namespace ECE141 {
 
 	class ModelQuery; // Forward declare
-
+    
+    struct null_obj{};
 	// STUDENT: Your Model is built from a bunch of these...
+
 	class ModelNode {
 		// Sometimes a node holds a basic value (null, bool, number, string)
 		// Sometimes a node holds a list of other nodes (list)
 		// Sometimes a node holds a collection key-value pairs, where the value is a node (an object)
+        friend class ModelTest;
+        friend class Model;
+        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, std::unordered_map<std::string, ModelNode>>;
+        
+        ModelNode(null_obj value): aNode(value){}
+        ModelNode(bool value): aNode(value){}
+        ModelNode(long value): aNode(value){}
+        ModelNode(double value): aNode(value){}
+        ModelNode(std::string value): aNode(value){}
+        ModelNode(std::vector<ModelNode> value): aNode(value){}
+        ModelNode(std::unordered_map<std::string, ModelNode> value): aNode(value){}
+        
+        myVariant get() {
+            return aNode;
+        }
+        
+    protected:
+        myVariant aNode;
 
 	};
 
-    struct null_obj{};
-
+  
 	class Model : public JSONListener {
 	public:
 		Model();
@@ -34,11 +53,9 @@ namespace ECE141 {
 
 		ModelQuery createQuery();
         
+//        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<Model>, Model>;
         
-
-        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<Model>, Model>;
-        
-        static myVariant getVariantNonQuoteType(const std::string &aString);
+        static ModelNode::myVariant getVariantNonQuoteType(const std::string &aString);
         
 
 	protected:
@@ -52,8 +69,8 @@ namespace ECE141 {
 		//          Choose your container(s) wisely
        
 
-        std::unordered_map<std::string, myVariant> data;
-        friend class ModelTest; // not working
+        std::unordered_map<std::string, ModelNode> data;
+        friend class ModelTest;
 
 	};
 

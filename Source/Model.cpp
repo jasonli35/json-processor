@@ -11,6 +11,8 @@ namespace ECE141 {
 	// ---Model---
     const char null = '\0';
 
+    using mNodeVariant = ECE141::ModelNode::myVariant;
+
 	Model::Model() {
 		
 	}
@@ -40,8 +42,8 @@ namespace ECE141 {
     }
 
     //possibly refactor to visitor pattern later
-    ECE141::Model::myVariant ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
-        Model::myVariant result;
+    mNodeVariant ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
+        ModelNode::myVariant result;
         if(aString == "true") {
             result = true;
         }
@@ -75,10 +77,11 @@ namespace ECE141 {
 		// Print statement for debugging, remove after implementation
 //		DBG("\t'" << aKey << "' : '" << aValue << "'");
         if(aType == Element::quoted) {
-            ECE141::Model::myVariant stringVar = aValue;
-            data[aKey] = stringVar;
+            ModelNode stringVal(aValue);
+            data[aKey] = stringVal;
         }
         else if(aType == Element::constant){
+            
             data[aKey] = getVariantNonQuoteType(aValue);
         }
         else {
