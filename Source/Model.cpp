@@ -56,7 +56,7 @@ namespace ECE141 {
             }
             else {
                 double double_result = std::strtod(aString.c_str(), nullptr);
-                if(double_result != 0.0 or aString == "0.0") {
+                if(double_result != 0.0 or aString.substr(0,3) == "0.0") {
                     result = double_result;
                 }
                 else {
