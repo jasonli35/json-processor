@@ -38,7 +38,8 @@ namespace ECE141 {
         }
         return true;
     }
-    
+
+    //possibly refactor to visitor pattern later
     ECE141::Model::myVariant ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
         Model::myVariant result;
         if(aString == "true") {
@@ -67,10 +68,22 @@ namespace ECE141 {
         return result;
     }
 
+
+
 	bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
-		TODO;
+		
 		// Print statement for debugging, remove after implementation
-		DBG("\t'" << aKey << "' : '" << aValue << "'");
+//		DBG("\t'" << aKey << "' : '" << aValue << "'");
+        if(aType == Element::quoted) {
+            ECE141::Model::myVariant stringVar = aValue;
+            data[aKey] = stringVar;
+        }
+        else if(aType == Element::constant){
+            data[aKey] = getVariantNonQuoteType(aValue);
+        }
+        else {
+            throw std::invalid_argument("Received type other than Element::quoted and Element::constant");
+        }
 		return true;
 	}
 

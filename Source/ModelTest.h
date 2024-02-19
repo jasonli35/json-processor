@@ -8,6 +8,7 @@
 #pragma once
 #include "Model.h"
 #include <iterator>
+#include <string>
 
 namespace ECE141 {
 class ModelTest: public ECE141::Testable {
@@ -23,7 +24,9 @@ public:
         {"test model getVariantNonQuoteType long", &ModelTest::test_model_getVariantNonQuoteType_long},
         {"test model getVariantNonQuoteType null", &ModelTest::test_model_getVariantNonQuoteType_null},
         {"test model getVariantNonQuoteType boolean", &ModelTest::test_model_getVariantNonQuoteType_bool},
-        
+        {"test model addKeyValuePair double", &ModelTest::testAddKeyVal_double},
+        {"test model addKeyValuePair long", &ModelTest::testAddKeyVal_long},
+        {"test model addKeyValuePair null", &ModelTest::testAddKeyVal_null},
     };
     OptString getTestName(size_t anIndex) const override {
         size_t thePos{0};
@@ -78,7 +81,47 @@ public:
         return true;
     }
     
+    struct Entry {
+        const std::string& aKey;
+        const std::string& aValue;
+        const Element aType;
+    };
     
+    template<typename T, typename Iterator>
+    bool test_addKeyValuePair(Iterator begin, Iterator end) {
+        Model aModel;
+        for (auto it = begin; it != end; ++it) {
+            Entry thisEntry = *it;
+            const std::string thisKey = thisEntry.aKey;
+            const std::string thisValue = thisEntry.aValue;
+            aModel.addKeyValuePair(thisKey, thisValue, thisEntry.aType);
+            ECE141::Model::myVariant aVara = aModel.data.at(thisKey);
+
+            if(std::to_string(std::get<T>(aVara)).substr(0, thisValue.length()).compare(thisValue) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    bool testAddKeyVal_double() {
+        Entry double_array[] = {{"key1", "1.2", Element::constant}, {"key2", "99999999.9", Element::constant}, {"key3", "0.9", Element::constant}, {"key4", "0.0", Element::constant}};
+        return test_addKeyValuePair<double>(std::begin(double_array), std::end(double_array));
+    }
+    
+    bool testAddKeyVal_long() {
+        Entry double_array[] = {{"key1", "0", Element::constant}, {"key2", "1", Element::constant}, {"key3", "999999", Element::constant}};
+        return test_addKeyValuePair<long>(std::begin(double_array), std::end(double_array));
+    }
+    
+    bool testAddKeyVal_null() {
+        Model aModel;
+        aModel.addKeyValuePair("akey", "null",  Element::constant);
+        if(!std::holds_alternative<null_obj>(aModel.data.at("akey"))) {
+            return false;
+        }
+        return true;
+    }
     
 };
 }
