@@ -9,6 +9,8 @@
 #include "JSONParser.h"
 #include <unordered_map>
 #include <list>
+#include <variant>
+
 
 
 namespace ECE141 {
@@ -19,28 +21,94 @@ namespace ECE141 {
 	// STUDENT: Your Model is built from a bunch of these...
 
 	class ModelNode {
+        
 		// Sometimes a node holds a basic value (null, bool, number, string)
 		// Sometimes a node holds a list of other nodes (list)
 		// Sometimes a node holds a collection key-value pairs, where the value is a node (an object)
+    public:
         friend class ModelTest;
         friend class Model;
-        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, std::unordered_map<std::string, ModelNode>>;
+        using hashmap = std::unordered_map<std::string, ModelNode>;
+        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, hashmap>;
         
-        ModelNode(null_obj value): aNode(value){}
-        ModelNode(bool value): aNode(value){}
-        ModelNode(long value): aNode(value){}
-        ModelNode(double value): aNode(value){}
-        ModelNode(std::string value): aNode(value){}
-        ModelNode(std::vector<ModelNode> value): aNode(value){}
-        ModelNode(std::unordered_map<std::string, ModelNode> value): aNode(value){}
+        void setParentPtr(std::unique_ptr<ModelNode>& parent) {
+            if(parent != nullptr) {
+                parent_node.reset(parent.release());
+            }
+        }
+        ModelNode() {
+            aNode = null_obj();
+            parent_node = nullptr;
+        }
+        ModelNode(const ModelNode& aCopy){
+            *this = aCopy;
+        }
         
-        myVariant get() {
+        ModelNode& operator=(const ModelNode& aCopy) {
+            aNode = aCopy.aNode;
+            parent_node = std::make_unique<ModelNode>(*(aCopy.parent_node));
+            return *this;
+        }
+        
+//        ModelNode(const null_obj value, std::unique_ptr<ModelNode>& parent_node): aNode(value){
+//            setParentPtr(parent_node);
+//        }
+        
+//        ModelNode(const bool value, std::unique_ptr<ModelNode>& parent_node): aNode(value){
+//            setParentPtr(parent_node);
+//        }
+//        ModelNode(const long value, std::unique_ptr<ModelNode>& parent_node): aNode(value){
+//            setParentPtr(parent_node);
+//        }
+//        ModelNode(const double value, std::unique_ptr<ModelNode>& parent_node): aNode(value){setParentPtr(parent_node);}
+//        ModelNode(const std::string value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {
+//            setParentPtr(parent_node);
+//        }
+        ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {
+            setParentPtr(parent_node);
+        }
+        ModelNode(hashmap value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {
+            setParentPtr(parent_node);
+        }
+        
+//        ModelNode(myVariant aVar, std::unique_ptr<ModelNode>& parent_node): aNode(aVar) {setParentPtr(parent_node);}
+        
+        
+        //dfdd
+        ModelNode(const null_obj value): aNode(value){}
+        
+        ModelNode(const bool value): aNode(value){
+            setParentPtr(parent_node);
+        }
+        ModelNode(const long value): aNode(value){
+            setParentPtr(parent_node);
+        }
+        ModelNode(const double value): aNode(value){}
+        ModelNode(const std::string value): aNode(value) {}
+        ModelNode(const std::vector<ModelNode> value): aNode(value) {}
+        ModelNode(hashmap value): aNode(value) {}
+        
+        ModelNode(myVariant aVar): aNode(aVar) {}
+        
+        bool isNull() {
+            return std::holds_alternative<null_obj>(aNode);
+        }
+        
+        myVariant get_variant() {
             return aNode;
         }
         
+        myVariant operator()(){
+            return aNode;
+        }
+        
+        
+        
+        
     protected:
         myVariant aNode;
-
+        std::unique_ptr<ModelNode> parent_node = std::make_unique<ModelNode>(nullptr);
+        
 	};
 
   
@@ -50,12 +118,12 @@ namespace ECE141 {
 		~Model() override = default;
 		Model(const Model& aModel);
 		Model &operator=(const Model& aModel);
-
+        
 		ModelQuery createQuery();
         
 //        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<Model>, Model>;
         
-        static ModelNode::myVariant getVariantNonQuoteType(const std::string &aString);
+        static ModelNode getVariantNonQuoteType(const std::string &aString);
         
 
 	protected:
@@ -68,8 +136,7 @@ namespace ECE141 {
 		// STUDENT: Your model will contain a collection of ModelNode*'s
 		//          Choose your container(s) wisely
        
-
-        std::unordered_map<std::string, ModelNode> data;
+        ModelNode current_node;
         friend class ModelTest;
 
 	};

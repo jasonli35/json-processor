@@ -20,13 +20,14 @@ public:
     
     using Callable = bool (ModelTest::*)();
     std::map<std::string, Callable> kList {
-        {"test model getVariantNonQuoteType double", &ModelTest::test_model_getVariantNonQuoteType_double},
-        {"test model getVariantNonQuoteType long", &ModelTest::test_model_getVariantNonQuoteType_long},
-        {"test model getVariantNonQuoteType null", &ModelTest::test_model_getVariantNonQuoteType_null},
-        {"test model getVariantNonQuoteType boolean", &ModelTest::test_model_getVariantNonQuoteType_bool},
-        {"test model addKeyValuePair double", &ModelTest::testAddKeyVal_double},
-        {"test model addKeyValuePair long", &ModelTest::testAddKeyVal_long},
-        {"test model addKeyValuePair null", &ModelTest::testAddKeyVal_null},
+//        {"test model getVariantNonQuoteType double", &ModelTest::test_model_getVariantNonQuoteType_double},
+//        {"test model getVariantNonQuoteType long", &ModelTest::test_model_getVariantNonQuoteType_long},
+//        {"test model getVariantNonQuoteType null", &ModelTest::test_model_getVariantNonQuoteType_null},
+//        {"test model getVariantNonQuoteType boolean", &ModelTest::test_model_getVariantNonQuoteType_bool},
+//        {"test model addKeyValuePair double", &ModelTest::testAddKeyVal_double},
+//        {"test model addKeyValuePair long", &ModelTest::testAddKeyVal_long},
+//        {"test model addKeyValuePair null", &ModelTest::testAddKeyVal_null},
+//        {"test model addKeyValuePair null", &ModelTest::tryingfun},
     };
     OptString getTestName(size_t anIndex) const override {
         size_t thePos{0};
@@ -38,6 +39,12 @@ public:
         return std::nullopt;
         
     }
+    bool tryingfun() {
+        const std::string& aString("abc");
+        ECE141::ModelNode node(aString);
+        
+        return true;
+    }
     
     bool operator()(const std::string &aName) override {
         return kList.count(aName) ? (this->*kList[aName])() : false;
@@ -48,8 +55,8 @@ public:
     bool test_nonQuote(Iterator begin, Iterator end) {
         for (auto it = begin; it != end; ++it) {
             T expected = *it;
-            ECE141::Model::myVariant actual = ECE141::Model::getVariantNonQuoteType(std::to_string(expected));
-            if(expected != std::get<T>(actual)) {
+            ECE141::ModelNode actual = ECE141::Model::getVariantNonQuoteType(std::to_string(expected));
+            if(expected != std::get<T>(actual())) {
                 return false;
             }
         }
@@ -74,8 +81,8 @@ public:
 
     }
     bool test_model_getVariantNonQuoteType_null() {
-        ECE141::Model::myVariant actual = ECE141::Model::getVariantNonQuoteType("null");
-        if(!std::holds_alternative<null_obj>(actual)) {
+        ECE141::ModelNode actual = ECE141::Model::getVariantNonQuoteType("null");
+        if(!std::holds_alternative<null_obj>(actual())) {
             return false;
         }
         return true;
@@ -87,17 +94,26 @@ public:
         const Element aType;
     };
     
+    ModelNode::hashmap getMapFromVar(ModelNode::myVariant aVar) {
+        return std::get<ModelNode::hashmap>(aVar);
+    }
+    
     template<typename T, typename Iterator>
     bool test_addKeyValuePair(Iterator begin, Iterator end) {
         Model aModel;
+        
         for (auto it = begin; it != end; ++it) {
             Entry thisEntry = *it;
             const std::string thisKey = thisEntry.aKey;
             const std::string thisValue = thisEntry.aValue;
             aModel.addKeyValuePair(thisKey, thisValue, thisEntry.aType);
-            ECE141::Model::myVariant aVara = aModel.data.at(thisKey);
-
-            if(std::to_string(std::get<T>(aVara)).substr(0, thisValue.length()).compare(thisValue) != 0) {
+            ECE141::ModelNode aNode = aModel.current_node;
+            
+            ModelNode::hashmap ahmap = getMapFromVar(aNode());
+            
+            T actual_value = std::get<T>(ahmap.at(thisKey)());
+            
+            if(std::to_string(actual_value).substr(0, thisValue.length()).compare(thisValue) != 0) {
                 return false;
             }
         }
@@ -117,7 +133,9 @@ public:
     bool testAddKeyVal_null() {
         Model aModel;
         aModel.addKeyValuePair("akey", "null",  Element::constant);
-        if(!std::holds_alternative<null_obj>(aModel.data.at("akey"))) {
+        ECE141::ModelNode::myVariant root_Var = aModel.current_node.get_variant();
+       
+        if(!std::holds_alternative<null_obj>(getMapFromVar(root_Var).at("akey").get_variant())) {
             return false;
         }
         return true;

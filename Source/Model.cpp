@@ -11,18 +11,19 @@ namespace ECE141 {
 	// ---Model---
     const char null = '\0';
 
-    using mNodeVariant = ECE141::ModelNode::myVariant;
+    
 
 	Model::Model() {
-		
-	}
+        std::unique_ptr<ModelNode> parentNode = std::make_unique<ModelNode>(nullptr);
+        current_node = ModelNode(ECE141::ModelNode::hashmap(), parentNode);
+    }
 
 	Model::Model(const Model& aModel) {
         *this = aModel;
 	}
 
 	Model &Model::operator=(const Model& aModel) {
-        data = aModel.data;
+        current_node = aModel.current_node;
 		return *this;
 	}
 
@@ -30,7 +31,7 @@ namespace ECE141 {
 		return ModelQuery(*this);
 	}
     
-    bool isInt(const std::string &aString) {
+    bool isLong(const std::string &aString) {
         size_t index = aString.find('.');
         if(index != std::string::npos) {return false;}
         for (size_t i = 0; i < aString.size(); i++) {
@@ -42,25 +43,26 @@ namespace ECE141 {
     }
 
     //possibly refactor to visitor pattern later
-    mNodeVariant ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
-        ModelNode::myVariant result;
+    ECE141::ModelNode ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
+        ModelNode result;
+        
         if(aString == "true") {
-            result = true;
+            result = ModelNode(true);
         }
         else if(aString == "false"){
-            result = false;
+            result = ModelNode(false);
         }
         else if(aString == "null") {
-            result = null_obj();
+            result = ModelNode(null_obj());
         }
         else {
-            if(isInt(aString)) {
-                result = stol(aString);
+            if(isLong(aString)) {
+                result = ModelNode(stol(aString));
             }
             else {
                 double double_result = std::strtod(aString.c_str(), nullptr);
                 if(double_result != 0.0 or aString.substr(0,3) == "0.0") {
-                    result = double_result;
+                    result = ModelNode(double_result);
                 }
                 else {
                     std::cerr << "Caught exception with unknown data type" << std::endl;
@@ -75,17 +77,17 @@ namespace ECE141 {
 	bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
 		
 		// Print statement for debugging, remove after implementation
-//		DBG("\t'" << aKey << "' : '" << aValue << "'");
+		DBG("\t'" << aKey << "' : '" << aValue << "'");
+        ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>(current_node());
         if(aType == Element::quoted) {
             ModelNode stringVal(aValue);
-            data[aKey] = stringVal;
+            thisHmap[aKey] = stringVal;
         }
         else if(aType == Element::constant){
-            
-            data[aKey] = getVariantNonQuoteType(aValue);
+            thisHmap[aKey] = getVariantNonQuoteType(aValue);
         }
         else {
-            throw std::invalid_argument("Received type other than Element::quoted and Element::constant");
+            return false;
         }
 		return true;
 	}
@@ -97,13 +99,39 @@ namespace ECE141 {
 		return true;
 	}
 
-	bool Model::openContainer(const std::string& aContainerName, Element aType) {
-		TODO;
-		// Print statement for debugging, remove after implementation
-		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
-		return true;
-	}
-
+bool Model::openContainer(const std::string& aContainerName, Element aType) {
+    
+    // Print statement for debugging, remove after implementation
+    //		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
+    ModelNode aNewNode;
+    std::unique_ptr<ModelNode> this_node(std::make_unique<ModelNode>(current_node));
+    switch (aType) {
+        case Element::object:
+            // ModelNode(hashmap value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
+            aNewNode = ModelNode(ECE141::ModelNode::hashmap(), this_node);
+            break;
+        case Element::array:
+            //ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
+            aNewNode = ModelNode(std::vector<ModelNode>(), this_node);
+            break;
+        default:
+            return false;
+    }
+    
+    if(aContainerName.empty()) {//inside list
+        //addItem(aNewNode, aType);
+        std::get<std::vector<ModelNode>>(current_node.get_variant()).push_back(aNewNode);
+    }
+    else {//inside object
+        ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>(current_node());
+        thisHmap[aContainerName] = aNewNode;
+    }
+    
+    current_node = aNewNode;
+    
+    //to create is object or list
+    
+}
 	bool Model::closeContainer(const std::string& aContainerName, Element aType) {
 		TODO;
 		// Print statement for debugging, remove after implementation
