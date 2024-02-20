@@ -50,43 +50,13 @@ namespace ECE141 {
             return *this;
         }
         
-//        ModelNode(const null_obj value, std::unique_ptr<ModelNode>& parent_node): aNode(value){
-//            setParentPtr(parent_node);
-//        }
-        
-//        ModelNode(const bool value, std::unique_ptr<ModelNode>& parent_node): aNode(value){
-//            setParentPtr(parent_node);
-//        }
-//        ModelNode(const long value, std::unique_ptr<ModelNode>& parent_node): aNode(value){
-//            setParentPtr(parent_node);
-//        }
-//        ModelNode(const double value, std::unique_ptr<ModelNode>& parent_node): aNode(value){setParentPtr(parent_node);}
-//        ModelNode(const std::string value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {
-//            setParentPtr(parent_node);
-//        }
+
         ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {
             setParentPtr(parent_node);
         }
         ModelNode(hashmap value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {
             setParentPtr(parent_node);
         }
-        
-//        ModelNode(myVariant aVar, std::unique_ptr<ModelNode>& parent_node): aNode(aVar) {setParentPtr(parent_node);}
-        
-        
-        //dfdd
-        ModelNode(const null_obj value): aNode(value){}
-        
-        ModelNode(const bool value): aNode(value){
-            setParentPtr(parent_node);
-        }
-        ModelNode(const long value): aNode(value){
-            setParentPtr(parent_node);
-        }
-        ModelNode(const double value): aNode(value){}
-        ModelNode(const std::string value): aNode(value) {}
-        ModelNode(const std::vector<ModelNode> value): aNode(value) {}
-        ModelNode(hashmap value): aNode(value) {}
         
         ModelNode(myVariant aVar): aNode(aVar) {}
         
