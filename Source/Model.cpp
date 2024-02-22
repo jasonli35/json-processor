@@ -5,17 +5,21 @@
 #include "Model.h"
 #include "Debug.h"
 #include <string>
+#include <sstream>
+
+#include <functional>
+
 
 namespace ECE141 {
 
 	// ---Model---
-    const char null = '\0';
+
 
     
 
 	Model::Model() {
-        std::unique_ptr<ModelNode> parentNode = std::make_unique<ModelNode>(nullptr);
-        current_node = ModelNode(ECE141::ModelNode::hashmap(), parentNode);
+        std::unique_ptr<ModelNode> parentNode = NULL;
+      
     }
 
 	Model::Model(const Model& aModel) {
@@ -30,6 +34,7 @@ namespace ECE141 {
 	ModelQuery Model::createQuery() {
 		return ModelQuery(*this);
 	}
+   
     
     bool isLong(const std::string &aString) {
         size_t index = aString.find('.');
@@ -45,7 +50,7 @@ namespace ECE141 {
     //possibly refactor to visitor pattern later
     ECE141::ModelNode ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
         ModelNode result;
-        
+
         if(aString == "true") {
             result = ModelNode(true);
         }
@@ -72,32 +77,88 @@ namespace ECE141 {
         return result;
     }
 
+void ModelNode::setParentPtr(std::unique_ptr<ModelNode>& parent) {
+    if(parent != nullptr) {
+        parent_node.reset(parent.release());
+    }
+}
+
+ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
+    aNode = aCopy.aNode;
+    if(aCopy.parent_node != NULL) {
+        parent_node = std::make_unique<ModelNode>(*(aCopy.parent_node));
+    }
+    return *this;
+}
+    
 
 
-	bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
+
+    bool isAstring(Element aType) {
+        return aType == Element::quoted;
+    }
+
+    bool isConstant(Element aType) {
+        return aType == Element::constant;
+    }
+
+    bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
 		
 		// Print statement for debugging, remove after implementation
-		DBG("\t'" << aKey << "' : '" << aValue << "'");
+//		DBG("\t'" << aKey << "' : '" << aValue << "'");
         ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>(current_node());
-        if(aType == Element::quoted) {
-            ModelNode stringVal(aValue);
-            thisHmap[aKey] = stringVal;
+        
+        if(isAstring(aType)) {
+            ModelNode insertStringNode(aValue);
+            thisHmap[aKey] = insertStringNode;
         }
-        else if(aType == Element::constant){
-            thisHmap[aKey] = getVariantNonQuoteType(aValue);
+        else if(isConstant(aType)){
+            ModelNode insertConsNode(getVariantNonQuoteType(aValue));
+            thisHmap[aKey] = insertConsNode;
         }
         else {
             return false;
         }
+        notifyObservers(aKey);
 		return true;
 	}
 
 	bool Model::addItem(const std::string& aValue, Element aType) {
-		TODO;
+	
 		// Print statement for debugging, remove after implementation
-		DBG("\t'" << aValue << "'");
+//		DBG("\t'" << aValue << "'");
+        ModelNode insert_node;
+        if(isAstring(aType)) {
+            insert_node = ModelNode(aValue);
+        }
+        else if(isConstant(aType)) {
+            insert_node = getVariantNonQuoteType(aValue);
+        }
+        else {
+            return false;
+        }
+        
+        std::vector<ECE141::ModelNode> current_vec = current_node.getVector();
+        notifyObservers(current_vec.size());
+        current_vec.push_back(insert_node);
 		return true;
 	}
+        
+
+        void Model::addObserver(std::shared_ptr<Observer> observer) {
+            observers.push_back(observer);
+        }
+        
+
+
+           // Method to notify observers
+        void Model::notifyObservers(const std::variant<std::string, size_t>& addedModelNode) {
+            for (auto observer: observers) {
+                observer->update_matching(addedModelNode);
+            }
+        }
+
+
 
 bool Model::openContainer(const std::string& aContainerName, Element aType) {
     
@@ -107,7 +168,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     std::unique_ptr<ModelNode> this_node(std::make_unique<ModelNode>(current_node));
     switch (aType) {
         case Element::object:
-            // ModelNode(hashmap value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
+  
             aNewNode = ModelNode(ECE141::ModelNode::hashmap(), this_node);
             break;
         case Element::array:
@@ -118,9 +179,17 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
             return false;
     }
     
+    addObserver(std::make_shared<Observer>(createQuery()));
+
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);
-        std::get<std::vector<ModelNode>>(current_node.get_variant()).push_back(aNewNode);
+        if(current_node.isNull()) {
+            current_node = aNewNode;
+        }
+        else {
+            current_node.getVector().push_back(aNewNode);
+        }
+        
     }
     else {//inside object
         ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>(current_node());
@@ -128,33 +197,155 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     }
     
     current_node = aNewNode;
-    
+    return true;
     //to create is object or list
     
 }
 	bool Model::closeContainer(const std::string& aContainerName, Element aType) {
-		TODO;
+	
 		// Print statement for debugging, remove after implementation
-		DBG(" " << (aType == Element::object ? "}" : "]"));
+//		DBG(" " << (aType == Element::object ? "}" : "]"));
+        
+        if(current_node.parent_node == nullptr) {
+            return false;
+        }
+        current_node = *(current_node.parent_node);
 		return true;
 	}
 
 
 	// ---ModelQuery---
+        
 
-	ModelQuery::ModelQuery(Model &aModel) : model(aModel) {}
+
+	ModelQuery::ModelQuery(Model &aModel) : model(aModel) {
+//        if(aModel.)
+    }
+    
+    
+        
+
+    const char period = '.';
+
+std::string earaseQuote(std::string aString) {
+    return aString.substr(1, aString.length() - 2);
+}
+
+
+    
+void ModelQuery::handleQueryRequest(std::string aQuery) {
+    if(aQuery[0] == '\'') {
+        std::string key = earaseQuote(aQuery);
+        ModelNode::hashmap currentMap = model().getMap();
+        model.resetCurrentNode(currentMap[key]);
+    }
+    else {
+        int index = std::stoi(aQuery);
+        model.resetCurrentNode(model().getVector()[index]);
+    }
+}
+        
+std::vector<ECE141::ModelNode> ModelNode::getVector() {
+    return std::get<std::vector<ModelNode>>(aNode);
+}
+
+ModelNode::hashmap ModelNode::getMap() {
+    return std::get<ModelNode::hashmap>(get_variant());
+}
+        
+void Model::resetCurrentNode(ModelNode setNode) {
+    current_node = setNode;
+}
+        
+ModelNode Model::operator()(){
+    return current_node;
+}
+        
+class NotifyMatchVisitor {
+public:
+    NotifyMatchVisitor(ModelQuery& mQuery): a_observer(mQuery) {}
+    void operator()(const std::string& insertKey) {
+        a_observer.map_matching_set.insert(insertKey);
+    }
+    void operator()(const size_t theSize) {
+        a_observer.vector_matching_set.insert(theSize);
+     }
+protected:
+    ModelQuery& a_observer;
+};
+        
+void ModelQuery::update_matching(std::variant<std::string, size_t> aKey) {
+    std::visit(NotifyMatchVisitor(*this), aKey);
+}
 
 	ModelQuery& ModelQuery::select(const std::string& aQuery) {
-		DBG("select(" << aQuery << ")");
-		TODO;
 
+//		DBG("select(" << aQuery << ")");
+        
+        std:: stringstream sStream(aQuery);
+        std::string nextQuery;
+        while (std::getline(sStream, nextQuery, period)) {
+            handleQueryRequest(nextQuery);
+        }
+        
 		return *this;
 	}
 
-	ModelQuery& ModelQuery::filter(const std::string& aQuery) {
-		DBG("filter(" << aQuery << ")");
-		TODO;
 
+std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
+    {"key", [](std::string action, std::string value, ModelQuery& mQuery) {
+        // Function for "key" operation
+        if(action == "contains") {
+            std::string stringToFind = earaseQuote(value);
+            std::unordered_set<std::string> keys_set = mQuery.map_matching_set;
+            for (std::string akey: keys_set) {
+                if(akey.find(stringToFind) == std::string::npos) {
+                    keys_set.erase(akey);
+                }
+            }
+        }
+        else {
+            std::cerr << "action is not available for filter" << std::endl;
+        }
+    }},
+    {"index", [](std::string action, std::string value, ModelQuery& mQuery) {
+        // Function for "index" operation
+        ECE141::Filter aFilter(std::stoi(value), action);
+        std::unordered_set<size_t> int_set = mQuery.vector_matching_set;
+        
+        for (size_t i = mQuery.model().getVector().size() - 1; i >= 0; i--) {
+            if (!aFilter.apply(i)) {
+                int_set.erase(i);
+            }
+        }
+
+    }
+ 
+}};
+    
+	ModelQuery& ModelQuery::filter(const std::string& aQuery) {
+//		DBG("filter(" << aQuery << ")");
+        ModelNode::myVariant container = model().get_variant();
+        if(!std::holds_alternative<std::vector<ModelNode>>(container) and !std::holds_alternative<ModelNode::hashmap>(container)) {
+            std::cerr << "Model is not currently holding valid container" << std::endl;
+        }
+        else {
+            std::istringstream stringStream(aQuery);
+            std::vector<std::string> operations_vec;
+            std::string a_op;
+            while (std::getline(stringStream, a_op, ' ')) {
+                operations_vec.push_back(a_op);
+            }
+            std::string identifier = operations_vec[0];
+            auto it = handleFilterOpts.find(identifier);
+            if (it != handleFilterOpts.end()) {
+                it->second(operations_vec[1], operations_vec[2], *this);
+            } else {
+                std::cout << "Unknown operation: " << identifier << std::endl;
+            }
+            
+
+        }
 		return *this;
 	}
 
