@@ -33,9 +33,10 @@ namespace ECE141 {
         using hashmap = std::unordered_map<std::string, ModelNode>;
         using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, hashmap>;
         
-      
         
-        ModelNode() {aNode = null_obj();}
+        static null_obj& defaultNullObj;
+        
+        ModelNode() : aNode(defaultNullObj) {}
         
         ModelNode(const ModelNode& aCopy) {*this = aCopy;}
         
@@ -43,9 +44,11 @@ namespace ECE141 {
         
         void setParentPtr(std::unique_ptr<ModelNode>& parent);
         
-        ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
+        ModelNode(std::vector<ModelNode>& value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
         
-        ModelNode(hashmap value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
+        ModelNode(hashmap& value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
+        
+        double getNumberValue();
         
 
         
@@ -53,11 +56,14 @@ namespace ECE141 {
         
         bool isNull() {return std::holds_alternative<null_obj>(aNode);}
         
-        myVariant get_variant() {return aNode;}
+        bool isObj();
+        bool isVec();
+        
+        myVariant& get_variant() {return aNode;}
         
         myVariant operator()(){return aNode;}
         
-        ModelNode::hashmap getMap();
+        hashmap& getMap();
         std::vector<ECE141::ModelNode> getVector();
 
     protected:
@@ -66,12 +72,6 @@ namespace ECE141 {
         
 	};
 
-    class Observer {
-    public:
-        Observer() {}
-        Observer(const Observer &) {}
-        virtual void update_matching(std::variant<std::string, size_t> aKey);
-    };
 
 
   
@@ -84,14 +84,11 @@ namespace ECE141 {
         
 		ModelQuery createQuery();
         
-//        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<Model>, Model>;
         
         static ModelNode getVariantNonQuoteType(const std::string &aString);
 
         void resetCurrentNode(ModelNode setNode);
-        
-        void addObserver(const Observer& observer);
-        void notifyObservers(const std::variant<std::string, size_t>& addedModelNode);
+
         
         
         ModelNode operator()();
@@ -104,17 +101,8 @@ namespace ECE141 {
 		bool openContainer(const std::string &aKey, Element aType) override;
 		bool closeContainer(const std::string &aKey, Element aType) override;
         
-       
-		// STUDENT: Your model will contain a collection of ModelNode*'s
-		//          Choose your container(s) wisely
-
-        
         ModelNode current_node;
         
-        std::vector<std::unique_ptr<Observer>> observers; 
-        //Observer aOb;
-     
-
 	};
 
 
@@ -126,8 +114,6 @@ namespace ECE141 {
         // ModelQuery gets constructed with an Model that means
         // ModelQuery has a Model so that you can query
         // get Something search the Model for the something
-//
-//        void update_matching(std::variant<std::string, size_t> aKey) override;
 
 
 		// ---Traversal---
@@ -147,8 +133,8 @@ namespace ECE141 {
 
 	protected:
 		Model &model;
-        std::unordered_set<std::string> map_matching_set; //only use for model with object
-        std::unordered_set<size_t> vector_matching_set; //only use for model with vector
+        std::unordered_set<std::string> matching_set_obj; //only use for model with object
+        std::unordered_set<size_t> matching_set_list;
         using filterOpt = void(*)(std::string, std::string, ModelQuery&);
         static std::map<std::string, ModelQuery::filterOpt> handleFilterOpts;
     

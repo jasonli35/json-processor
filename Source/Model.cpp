@@ -34,10 +34,9 @@ namespace ECE141 {
 	ModelQuery Model::createQuery() {
 		return ModelQuery(*this);
         // you create the query from the model,
-        // no need for modelQuery to observe changes because modelquery is created after model is created
+        // no need for modelQuery to ove changes because modelquery is created after model is created
 	}
    
-    
     bool isLong(const std::string &aString) {
         size_t index = aString.find('.');
         if(index != std::string::npos) {return false;}
@@ -54,7 +53,7 @@ namespace ECE141 {
         ModelNode result;
 
         if(aString == "true") {
-            result = ModelNode(true);
+            result = ECE141::ModelNode(true);
         }
         else if(aString == "false"){
             result = ModelNode(false);
@@ -79,6 +78,36 @@ namespace ECE141 {
         return result;
     }
 
+struct GetNumberVisitor {
+
+    //this is variant std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, hashmap>;
+    double operator()(const double& aNum) const {
+        return aNum;
+    }
+    double operator()(const long& aNum) const {
+        return static_cast<double>(aNum);
+    }
+    double operator()(null_obj value) const { //how can this be all datatype
+        throw std::runtime_error("An error occurred! Type null_obj is not number value");
+    }
+    double operator()(bool value) const { //how can this be all datatype
+        throw std::runtime_error("An error occurred! Type bool is not number value");
+    }
+    double operator()(std::string value) const { //how can this be all datatype
+        throw std::runtime_error("An error occurred! Type string is not number value");
+    }
+    double operator()(std::vector<ModelNode> value) const { //how can this be all datatype
+        throw std::runtime_error("An error occurred! Type std::vector<ModelNode> is not number value");
+    }
+    double operator()(ModelNode::hashmap value) const { //how can this be all datatype
+        throw std::runtime_error("An error occurred! Type ModelNode::hashmap is not number value");
+    }
+};
+
+double ModelNode::getNumberValue() {
+    return std::visit(GetNumberVisitor{}, aNode);
+}
+
 void ModelNode::setParentPtr(std::unique_ptr<ModelNode>& parent) {
     if(parent != nullptr) {
         parent_node.reset(parent.release());
@@ -93,8 +122,6 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
     return *this;
 }
     
-
-
 
     bool isAstring(Element aType) {
         return aType == Element::quoted;
@@ -121,7 +148,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
         else {
             return false;
         }
-        notifyObservers(aKey);
+      
 		return true;
 	}
 
@@ -141,35 +168,10 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
         }
         
         std::vector<ECE141::ModelNode> current_vec = current_node.getVector();
-        notifyObservers(current_vec.size());
+
         current_vec.push_back(insert_node);
 		return true;
 	}
-
-    // Model which is in memory representation of the JSON
-    // You have a query which has a model that it can search
-    // You have modelNodes which make up the JSON and model has the root modelNode
-        
-
-        void Model::addObserver(const Observer& observer) {
-//            std::unique_ptr<Observer> observer_ptr = std::make_unique<Observer>(observer);
-//            observers.push_back(observer_ptr);
-            // what does push_back do?
-            // yes it adds the element to the end of the vector
-            // but doing so it copies the element into the vector
-
-            // we need to make the last element of the vector be a unique_ptr to the observer
-            //observers.push_back(std::make_unique<Observer>(observer));
-
-        }
-        
-
-           // Method to notify observers
-        void Model::notifyObservers(const std::variant<std::string, size_t>& addedModelNode) {
-            for (std::unique_ptr<Observer>& observer: observers) {
-                observer->update_matching(addedModelNode);
-            }
-        }
 
 
 
@@ -179,20 +181,24 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     //		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
     ModelNode aNewNode;
     std::unique_ptr<ModelNode> this_node(std::make_unique<ModelNode>(current_node));
+    ModelNode::hashmap new_hmap;
+    std::vector<ModelNode> newVector;
+    
     switch (aType) {
         case Element::object:
-  
-            aNewNode = ModelNode(ECE141::ModelNode::hashmap(), this_node);
+            
+            aNewNode = ModelNode(new_hmap, this_node);
             break;
         case Element::array:
             //ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
-            aNewNode = ModelNode(std::vector<ModelNode>(), this_node);
+            
+            aNewNode = ModelNode(newVector, this_node);
             break;
         default:
             return false;
     }
     
-    //addObserver(createQuery());
+
 
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);
@@ -205,8 +211,9 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
         
     }
     else {//inside object
-        ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>(current_node());
+        ModelNode::hashmap& thisHmap = current_node.getMap();
         thisHmap[aContainerName] = aNewNode;
+        std::cout << aContainerName << std::endl;
     }
     
     current_node = aNewNode;
@@ -215,8 +222,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     
 }
 	bool Model::closeContainer(const std::string& aContainerName, Element aType) {
-	
-		// Print statement for debugging, remove after implementation
+
 //		DBG(" " << (aType == Element::object ? "}" : "]"));
         
         if(current_node.parent_node == nullptr) {
@@ -229,15 +235,27 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 
 	// ---ModelQuery---
         
-
-
 	ModelQuery::ModelQuery(Model &aModel) : model(aModel) {
-//        if(aModel.)
+        if(aModel().isNull()) {
+            std::cerr << "The Model is null" << std::endl;
+        }
+        bool holdObj = aModel().isObj();
+        bool holdVec = aModel().isVec();
+        if(!(holdObj or holdVec)) {
+            std::cerr << "This is not anContainer" << std::endl;
+        }
+        if(holdVec) {
+            for(size_t i = 0; i < aModel().getVector().size(); i++) {
+                matching_set_list.insert(i);
+            }
+        }
+        if(holdObj) {
+            for (const auto& kVpair : aModel().getMap()) {
+                matching_set_obj.insert(kVpair.first);
+            }
+        }
     }
     
-    
-        
-
     const char period = '.';
 
 std::string earaseQuote(std::string aString) {
@@ -262,8 +280,16 @@ std::vector<ECE141::ModelNode> ModelNode::getVector() {
     return std::get<std::vector<ModelNode>>(aNode);
 }
 
-ModelNode::hashmap ModelNode::getMap() {
+ModelNode::hashmap& ModelNode::getMap() {
     return std::get<ModelNode::hashmap>(get_variant());
+}
+
+bool ModelNode::isObj() {
+    return std::holds_alternative<hashmap>(aNode);
+}
+
+bool ModelNode::isVec() {
+    return std::holds_alternative<std::vector<ModelNode>>(aNode);
 }
         
 void Model::resetCurrentNode(ModelNode setNode) {
@@ -274,26 +300,10 @@ ModelNode Model::operator()(){
     return current_node;
 }
         
-class NotifyMatchVisitor {
-public:
-    NotifyMatchVisitor(ModelQuery& mQuery): a_observer(mQuery) {}
-    void operator()(const std::string& insertKey) {
-        a_observer.map_matching_set.insert(insertKey);
-    }
-    void operator()(const size_t theSize) {
-        a_observer.vector_matching_set.insert(theSize);
-     }
-protected:
-    ModelQuery& a_observer;
-};
-        
-//void ModelQuery::update_matching(std::variant<std::string, size_t> aKey) {
-//    std::visit(NotifyMatchVisitor(*this), aKey);
-//}
 
 	ModelQuery& ModelQuery::select(const std::string& aQuery) {
 
-//		DBG("select(" << aQuery << ")");
+		DBG("select(" << aQuery << ")");
         
         std:: stringstream sStream(aQuery);
         std::string nextQuery;
@@ -306,14 +316,15 @@ protected:
 
 
 std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
+    
     {"key", [](std::string action, std::string value, ModelQuery& mQuery) {
         // Function for "key" operation
         if(action == "contains") {
+            std::unordered_set<std::string> key_set = mQuery.matching_set_obj;
             std::string stringToFind = earaseQuote(value);
-            std::unordered_set<std::string> keys_set = mQuery.map_matching_set;
-            for (std::string akey: keys_set) {
-                if(akey.find(stringToFind) == std::string::npos) {
-                    keys_set.erase(akey);
+            for (std::string aKey:  key_set) {
+                if(aKey.find(stringToFind) == std::string::npos) {
+                    key_set.erase(aKey);
                 }
             }
         }
@@ -324,11 +335,10 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
     {"index", [](std::string action, std::string value, ModelQuery& mQuery) {
         // Function for "index" operation
         ECE141::Filter aFilter(std::stoi(value), action);
-        std::unordered_set<size_t> int_set = mQuery.vector_matching_set;
         
         for (size_t i = mQuery.model().getVector().size() - 1; i >= 0; i--) {
             if (!aFilter.apply(i)) {
-                int_set.erase(i);
+                mQuery.matching_set_list.erase(i);
             }
         }
 
@@ -356,24 +366,25 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
             } else {
                 std::cout << "Unknown operation: " << identifier << std::endl;
             }
-            
-
+        
         }
 		return *this;
 	}
 
 	size_t ModelQuery::count() {
-		DBG("count()");
-		TODO;
+//		DBG("count()");
 
-		return 0;
+		return std::max(matching_set_obj.size(), matching_set_list.size());
 	}
 
 	double ModelQuery::sum() {
 		DBG("sum()");
-		TODO;
-
-		return 0.0;
+        double result = 0;
+        std::vector<ModelNode> holdingVec = model().getVector();
+        for(size_t index: matching_set_list) {
+            result += holdingVec[index].getNumberValue();
+        }
+		return result;
 	}
 
 	std::optional<std::string> ModelQuery::get(const std::string& aKeyOrIndex) {
