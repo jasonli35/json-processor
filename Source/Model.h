@@ -40,6 +40,7 @@ namespace ECE141 {
         ModelNode(const ModelNode& aCopy) {*this = aCopy;}
         
         ModelNode& operator=(const ModelNode& aCopy);
+        
         void setParentPtr(std::unique_ptr<ModelNode>& parent);
         
         ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
