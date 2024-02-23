@@ -33,6 +33,8 @@ namespace ECE141 {
 
 	ModelQuery Model::createQuery() {
 		return ModelQuery(*this);
+        // you create the query from the model,
+        // no need for modelQuery to observe changes because modelquery is created after model is created
 	}
    
     
@@ -143,11 +145,22 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
         current_vec.push_back(insert_node);
 		return true;
 	}
+
+    // Model which is in memory representation of the JSON
+    // You have a query which has a model that it can search
+    // You have modelNodes which make up the JSON and model has the root modelNode
         
 
         void Model::addObserver(const Observer& observer) {
-            std::unique_ptr<Observer> observer_ptr = std::make_unique<Observer>(observer);
-            observers.push_back(observer_ptr);
+//            std::unique_ptr<Observer> observer_ptr = std::make_unique<Observer>(observer);
+//            observers.push_back(observer_ptr);
+            // what does push_back do?
+            // yes it adds the element to the end of the vector
+            // but doing so it copies the element into the vector
+
+            // we need to make the last element of the vector be a unique_ptr to the observer
+            //observers.push_back(std::make_unique<Observer>(observer));
+
         }
         
 
@@ -179,7 +192,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
             return false;
     }
     
-    addObserver(createQuery());
+    //addObserver(createQuery());
 
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);
@@ -274,9 +287,9 @@ protected:
     ModelQuery& a_observer;
 };
         
-void ModelQuery::update_matching(std::variant<std::string, size_t> aKey) {
-    std::visit(NotifyMatchVisitor(*this), aKey);
-}
+//void ModelQuery::update_matching(std::variant<std::string, size_t> aKey) {
+//    std::visit(NotifyMatchVisitor(*this), aKey);
+//}
 
 	ModelQuery& ModelQuery::select(const std::string& aQuery) {
 
