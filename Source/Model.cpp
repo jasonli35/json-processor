@@ -145,15 +145,15 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
 	}
         
 
-        void Model::addObserver(std::shared_ptr<Observer> observer) {
-            observers.push_back(observer);
+        void Model::addObserver(const Observer& observer) {
+            std::unique_ptr<Observer> observer_ptr = std::make_unique<Observer>(observer);
+            observers.push_back(observer_ptr);
         }
         
 
-
            // Method to notify observers
         void Model::notifyObservers(const std::variant<std::string, size_t>& addedModelNode) {
-            for (auto observer: observers) {
+            for (std::unique_ptr<Observer>& observer: observers) {
                 observer->update_matching(addedModelNode);
             }
         }
@@ -179,7 +179,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
             return false;
     }
     
-    addObserver(std::make_shared<Observer>(createQuery()));
+    addObserver(createQuery());
 
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);

@@ -89,7 +89,7 @@ namespace ECE141 {
 
         void resetCurrentNode(ModelNode setNode);
         
-        void addObserver(std::shared_ptr<Observer> observer);
+        void addObserver(const Observer& observer);
         void notifyObservers(const std::variant<std::string, size_t>& addedModelNode);
         
         
@@ -102,6 +102,7 @@ namespace ECE141 {
 		bool addItem(const std::string &aValue, Element aType) override;
 		bool openContainer(const std::string &aKey, Element aType) override;
 		bool closeContainer(const std::string &aKey, Element aType) override;
+        
        
 		// STUDENT: Your model will contain a collection of ModelNode*'s
 		//          Choose your container(s) wisely
@@ -109,7 +110,7 @@ namespace ECE141 {
         
         ModelNode current_node;
         
-        std::vector<std::shared_ptr<Observer>> observers; 
+        std::vector<std::unique_ptr<Observer>> observers; 
         //Observer aOb;
      
 
