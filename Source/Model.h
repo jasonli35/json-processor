@@ -118,11 +118,16 @@ namespace ECE141 {
 	};
 
 
-	class ModelQuery: public Observer {
+	class ModelQuery {
 	public:
+
 		ModelQuery(Model& aModel);
-        
-        void update_matching(std::variant<std::string, size_t> aKey) override;
+
+        // ModelQuery gets constructed with an Model that means
+        // ModelQuery has a Model so that you can query
+        // get Something search the Model for the something
+//
+//        void update_matching(std::variant<std::string, size_t> aKey) override;
 
 
 		// ---Traversal---
