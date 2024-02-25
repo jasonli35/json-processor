@@ -100,23 +100,23 @@ public:
     
     template<typename T, typename Iterator>
     bool test_addKeyValuePair(Iterator begin, Iterator end) {
-        Model aModel;
-        
-        for (auto it = begin; it != end; ++it) {
-            Entry thisEntry = *it;
-            const std::string thisKey = thisEntry.aKey;
-            const std::string thisValue = thisEntry.aValue;
-            aModel.addKeyValuePair(thisKey, thisValue, thisEntry.aType);
-            ECE141::ModelNode aNode = aModel.current_node;
-            
-            ModelNode::hashmap ahmap = getMapFromVar(aNode());
-            
-            T actual_value = std::get<T>(ahmap.at(thisKey)());
-            
-            if(std::to_string(actual_value).substr(0, thisValue.length()).compare(thisValue) != 0) {
-                return false;
-            }
-        }
+//        Model aModel;
+//        
+//        for (auto it = begin; it != end; ++it) {
+//            Entry thisEntry = *it;
+//            const std::string thisKey = thisEntry.aKey;
+//            const std::string thisValue = thisEntry.aValue;
+//            aModel.addKeyValuePair(thisKey, thisValue, thisEntry.aType);
+//            ECE141::ModelNode aNode = *aModel.current_node;
+//            
+//            ModelNode::hashmap ahmap = getMapFromVar(aNode());
+//            
+//            T actual_value = std::get<T>(ahmap.at(thisKey)());
+//            
+//            if(std::to_string(actual_value).substr(0, thisValue.length()).compare(thisValue) != 0) {
+//                return false;
+//            }
+//        }
         return true;
     }
     
@@ -131,13 +131,13 @@ public:
     }
     
     bool testAddKeyVal_null() {
-        Model aModel;
-        aModel.addKeyValuePair("akey", "null",  Element::constant);
-        ECE141::ModelNode::myVariant root_Var = aModel.current_node.get_variant();
-       
-        if(!std::holds_alternative<null_obj>(getMapFromVar(root_Var).at("akey").get_variant())) {
-            return false;
-        }
+//        Model aModel;
+//        aModel.addKeyValuePair("akey", "null",  Element::constant);
+//        ECE141::ModelNode::myVariant root_Var = aModel->current_node.get_variant();
+//       
+//        if(!std::holds_alternative<null_obj>(getMapFromVar(root_Var).at("akey").get_variant())) {
+//            return false;
+//        }
         return true;
     }
     

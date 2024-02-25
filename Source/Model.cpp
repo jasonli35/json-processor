@@ -17,10 +17,7 @@ namespace ECE141 {
 
     
 
-	Model::Model() {
-        std::unique_ptr<ModelNode> parentNode = NULL;
-      
-    }
+	Model::Model() {}
 
 	Model::Model(const Model& aModel) {
         *this = aModel;
@@ -48,7 +45,6 @@ namespace ECE141 {
         return true;
     }
 
-    //possibly refactor to visitor pattern later
     ECE141::ModelNode ECE141::Model::getVariantNonQuoteType(const std::string &aString) {
         ModelNode result;
 
@@ -96,8 +92,8 @@ struct GetNumberVisitor {
     double operator()(std::string value) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type string is not number value");
     }
-    double operator()(std::vector<ModelNode> value) const { //how can this be all datatype
-        throw std::runtime_error("An error occurred! Type std::vector<ModelNode> is not number value");
+    double operator()(ModelNode::vec_ptr value) const { //how can this be all datatype
+        throw std::runtime_error("An error occurred! Type ModelNode::vec_ptr is not number value");
     }
     double operator()(ModelNode::hashmap value) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type ModelNode::hashmap is not number value");
@@ -108,17 +104,14 @@ double ModelNode::getNumberValue() {
     return std::visit(GetNumberVisitor{}, aNode);
 }
 
-void ModelNode::setParentPtr(std::unique_ptr<ModelNode>& parent) {
-    if(parent != nullptr) {
-        parent_node.reset(parent.release());
-    }
-}
 
 ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
     aNode = aCopy.aNode;
-    if(aCopy.parent_node != NULL) {
-        parent_node = std::make_unique<ModelNode>(*(aCopy.parent_node));
+    //std::make_shared<MyClass>(*original);
+    if(aCopy.parent_node != nullptr) {
+        parent_node = std::make_shared<ModelNode>(*(aCopy.parent_node));
     }
+    
     return *this;
 }
     
@@ -135,15 +128,15 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
 		
 		// Print statement for debugging, remove after implementation
 //		DBG("\t'" << aKey << "' : '" << aValue << "'");
-        ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>(current_node());
+        ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>((*current_node)());
         
         if(isAstring(aType)) {
             ModelNode insertStringNode(aValue);
-            thisHmap[aKey] = insertStringNode;
+            thisHmap[aKey] = std::make_shared<ModelNode>(insertStringNode);
         }
         else if(isConstant(aType)){
             ModelNode insertConsNode(getVariantNonQuoteType(aValue));
-            thisHmap[aKey] = insertConsNode;
+            thisHmap[aKey] = std::make_shared<ModelNode>(insertConsNode);
         }
         else {
             return false;
@@ -167,9 +160,9 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
             return false;
         }
         
-        std::vector<ECE141::ModelNode> current_vec = current_node.getVector();
+        ModelNode::vec_ptr current_vec = current_node->getVector();
 
-        current_vec.push_back(insert_node);
+        current_vec.push_back(std::make_shared<ModelNode>(insert_node));
 		return true;
 	}
 
@@ -179,44 +172,40 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     
     // Print statement for debugging, remove after implementation
     //		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
-    ModelNode aNewNode;
-    std::unique_ptr<ModelNode> this_node(std::make_unique<ModelNode>(current_node));
-    ModelNode::hashmap new_hmap;
-    std::vector<ModelNode> newVector;
-    
-    switch (aType) {
-        case Element::object:
-            
-            aNewNode = ModelNode(new_hmap, this_node);
-            break;
-        case Element::array:
-            //ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
-            
-            aNewNode = ModelNode(newVector, this_node);
-            break;
-        default:
-            return false;
+
+
+    if(aType == Element::object) {
+        ModelNode::hashmap new_hmap = ModelNode::hashmap(ModelNode::hashmap());
+        *current_node = ModelNode(new_hmap, current_node);
+    }
+    else if(aType ==  Element::array) {
+        //ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
+//        aNewNode = std::make_shared<ModelNode>(ModelNode(new_vec_ptr, current_node));
+        ModelNode::vec_ptr new_vec_ptr = ModelNode::vec_ptr(ModelNode::vec_ptr());
+        *current_node = ModelNode(new_vec_ptr, current_node);
+    }
+    else {
+        return false;
     }
     
-
+    std::shared_ptr<ModelNode> parent_node = current_node->parent_node;
 
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);
-        if(current_node.isNull()) {
-            current_node = aNewNode;
+        if(parent_node != nullptr) {
+            parent_node->getVector().push_back(current_node);
         }
         else {
-            current_node.getVector().push_back(aNewNode);
+            root_node = current_node.get();
         }
         
     }
     else {//inside object
-        ModelNode::hashmap& thisHmap = current_node.getMap();
-        thisHmap[aContainerName] = aNewNode;
-        std::cout << aContainerName << std::endl;
+        ModelNode::hashmap& thisHmap = parent_node->getMap();
+        thisHmap[aContainerName] = current_node;
+//        std::cout << aContainerName << std::endl;
     }
-    
-    current_node = aNewNode;
+ 
     return true;
     //to create is object or list
     
@@ -225,10 +214,10 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 
 //		DBG(" " << (aType == Element::object ? "}" : "]"));
         
-        if(current_node.parent_node == nullptr) {
+        if(current_node.get()->parent_node == nullptr) {
             return false;
         }
-        current_node = *(current_node.parent_node);
+        current_node = current_node.get()->parent_node;
 		return true;
 	}
 
@@ -264,23 +253,62 @@ std::string earaseQuote(std::string aString) {
 
 
     
-void ModelQuery::handleQueryRequest(std::string aQuery) {
+ModelNode* ModelQuery::handleQueryRequest(std::string aQuery, ModelNode* current_mNode) {
+    ModelNode* result_node = nullptr;
     if(aQuery[0] == '\'') {
         std::string key = earaseQuote(aQuery);
-        ModelNode::hashmap currentMap = model().getMap();
-        model.resetCurrentNode(currentMap[key]);
+        ModelNode::hashmap currentMap = current_mNode->getMap();
+        auto it = currentMap.find(key);
+        if(it == currentMap.end()) {
+            throw std::runtime_error("Error occurred: key: " + key + " not found in the currently object");
+        }
+        else {
+            result_node = (it->second).get();
+        }
     }
     else {
-        int index = std::stoi(aQuery);
-        model.resetCurrentNode(model().getVector()[index]);
+        size_t index = std::stoi(aQuery);
+        ModelNode::vec_ptr aVec = model().getVector();
+        if(index < 0 or aVec.size() <= index) {
+            throw std::runtime_error("Error occurred: index: " + std::to_string(index) + " is out of bound in the currently object");
+        }
+        else {
+            result_node = aVec[index].get();
+        }
+        
     }
+    return result_node;
 }
         
-std::vector<ECE141::ModelNode> ModelNode::getVector() {
-    return std::get<std::vector<ModelNode>>(aNode);
+ModelNode::vec_ptr ModelNode::getVector() {
+    return std::get<ModelNode::vec_ptr>(aNode);
 }
 
 ModelNode::hashmap& ModelNode::getMap() {
+    //using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, hashmap>
+    
+//    if(std::holds_alternative<null_obj>(aNode)) {
+//        
+//    }
+//    if(std::holds_alternative<bool>(aNode)){
+//        
+//    }
+//    if(std::holds_alternative<long>(aNode)){
+//        
+//    }
+//    if(std::holds_alternative<double>(aNode)){
+//        
+//    }
+//    if(std::holds_alternative<std::string>(aNode)){
+//        
+//    }
+//    if(std::holds_alternative<hashmap>(aNode)){
+//        
+//    }
+//    if(std::holds_alternative<std::vector<ModelNode>>(aNode)){
+//        
+//    }
+    
     return std::get<ModelNode::hashmap>(get_variant());
 }
 
@@ -289,15 +317,13 @@ bool ModelNode::isObj() {
 }
 
 bool ModelNode::isVec() {
-    return std::holds_alternative<std::vector<ModelNode>>(aNode);
+    return std::holds_alternative<ModelNode::vec_ptr>(aNode);
 }
         
-void Model::resetCurrentNode(ModelNode setNode) {
-    current_node = setNode;
-}
+
         
 ModelNode Model::operator()(){
-    return current_node;
+    return *current_node;
 }
         
 
@@ -307,8 +333,9 @@ ModelNode Model::operator()(){
         
         std:: stringstream sStream(aQuery);
         std::string nextQuery;
+        ModelNode* current_node = model.root_node;
         while (std::getline(sStream, nextQuery, period)) {
-            handleQueryRequest(nextQuery);
+            current_node = handleQueryRequest(nextQuery, current_node);
         }
         
 		return *this;
@@ -349,7 +376,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 	ModelQuery& ModelQuery::filter(const std::string& aQuery) {
 //		DBG("filter(" << aQuery << ")");
         ModelNode::myVariant container = model().get_variant();
-        if(!std::holds_alternative<std::vector<ModelNode>>(container) and !std::holds_alternative<ModelNode::hashmap>(container)) {
+        if(!std::holds_alternative<ModelNode::vec_ptr>(container) and !std::holds_alternative<ModelNode::hashmap>(container)) {
             std::cerr << "Model is not currently holding valid container" << std::endl;
         }
         else {
@@ -380,9 +407,9 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 	double ModelQuery::sum() {
 		DBG("sum()");
         double result = 0;
-        std::vector<ModelNode> holdingVec = model().getVector();
+        std::vector<std::shared_ptr<ModelNode>> holdingVec = model().getVector();
         for(size_t index: matching_set_list) {
-            result += holdingVec[index].getNumberValue();
+            result += holdingVec[index].get()->getNumberValue();
         }
 		return result;
 	}

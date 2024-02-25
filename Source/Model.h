@@ -30,29 +30,35 @@ namespace ECE141 {
     public:
         friend class ModelTest;
         friend class Model;
-        using hashmap = std::unordered_map<std::string, ModelNode>;
-        using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, hashmap>;
+        using hashmap = std::unordered_map<std::string, std::shared_ptr<ModelNode>>;
+        using vec_ptr = std::vector<std::shared_ptr<ModelNode>>;
+        using myVariant = std::variant<null_obj, bool, long, double, std::string, vec_ptr, hashmap>;
         
         
-        static null_obj& defaultNullObj;
         
-        ModelNode() : aNode(defaultNullObj) {}
+        ModelNode() : aNode(null_obj()), parent_node(nullptr) {
+            
+        }
+        
+        ModelNode(myVariant aVar): aNode(aVar), parent_node(nullptr) {}
         
         ModelNode(const ModelNode& aCopy) {*this = aCopy;}
         
         ModelNode& operator=(const ModelNode& aCopy);
         
-        void setParentPtr(std::unique_ptr<ModelNode>& parent);
+        ~ModelNode(){
+            
+        }
         
-        ModelNode(std::vector<ModelNode>& value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
         
-        ModelNode(hashmap& value, std::unique_ptr<ModelNode>& parent_node): aNode(value) {setParentPtr(parent_node);}
+        ModelNode(vec_ptr value, std::shared_ptr<ModelNode> p_node): aNode(value), parent_node(p_node.get()) {}
+        
+        ModelNode(hashmap value,  std::shared_ptr<ModelNode> p_node): aNode(value), parent_node(p_node.get()) {
+            
+        }
         
         double getNumberValue();
         
-
-        
-        ModelNode(myVariant aVar): aNode(aVar) {}
         
         bool isNull() {return std::holds_alternative<null_obj>(aNode);}
         
@@ -64,11 +70,11 @@ namespace ECE141 {
         myVariant operator()(){return aNode;}
         
         hashmap& getMap();
-        std::vector<ECE141::ModelNode> getVector();
+        vec_ptr getVector();
 
     protected:
         myVariant aNode;
-        std::unique_ptr<ModelNode> parent_node;
+        std::shared_ptr<ModelNode> parent_node;
         
 	};
 
@@ -77,6 +83,7 @@ namespace ECE141 {
   
 	class Model : public JSONListener {
 	public:
+        ModelNode* root_node = nullptr;
 		Model();
 		~Model() override = default;
 		Model(const Model& aModel);
@@ -101,8 +108,9 @@ namespace ECE141 {
 		bool openContainer(const std::string &aKey, Element aType) override;
 		bool closeContainer(const std::string &aKey, Element aType) override;
         
-        ModelNode current_node;
+        std::shared_ptr<ModelNode> current_node = std::make_shared<ModelNode>(null_obj());
         
+         
 	};
 
 
@@ -127,7 +135,8 @@ namespace ECE141 {
 		double sum();
 		std::optional<std::string> get(const std::string& aKeyOrIndex);
         
-        void handleQueryRequest(std::string aQuery);
+        ModelNode* handleQueryRequest(std::string aQuery, ModelNode* current_mNode);
+        
         
         friend class NotifyMatchVisitor;
 
@@ -137,6 +146,7 @@ namespace ECE141 {
         std::unordered_set<size_t> matching_set_list;
         using filterOpt = void(*)(std::string, std::string, ModelQuery&);
         static std::map<std::string, ModelQuery::filterOpt> handleFilterOpts;
+        
     
 	};
 
