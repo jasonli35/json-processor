@@ -109,7 +109,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
     aNode = aCopy.aNode;
     //std::make_shared<MyClass>(*original);
     if(aCopy.parent_node != nullptr) {
-        parent_node = std::make_shared<ModelNode>(*(aCopy.parent_node));
+        parent_node = aCopy.parent_node;
     }
     
     return *this;
@@ -123,6 +123,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
     bool isConstant(Element aType) {
         return aType == Element::constant;
     }
+
 
     bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
 		
@@ -172,37 +173,43 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     
     // Print statement for debugging, remove after implementation
     //		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
-
+    
+    ModelNode::hashmap new_hmap = ModelNode::hashmap(ModelNode::hashmap());
+    if(current_node == nullptr) {
+        current_node = std::make_shared<ModelNode>(ModelNode(new_hmap));
+        root_node = current_node.get();
+   
+        
+        return true;
+    }
 
     if(aType == Element::object) {
-        ModelNode::hashmap new_hmap = ModelNode::hashmap(ModelNode::hashmap());
-        *current_node = ModelNode(new_hmap, current_node);
+       
+        current_node = std::make_shared<ModelNode>(ModelNode(new_hmap));
     }
     else if(aType ==  Element::array) {
         //ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
 //        aNewNode = std::make_shared<ModelNode>(ModelNode(new_vec_ptr, current_node));
         ModelNode::vec_ptr new_vec_ptr = ModelNode::vec_ptr(ModelNode::vec_ptr());
-        *current_node = ModelNode(new_vec_ptr, current_node);
+        current_node = std::make_shared<ModelNode>(ModelNode(new_vec_ptr, current_node.get()));
     }
     else {
         return false;
     }
     
-    std::shared_ptr<ModelNode> parent_node = current_node->parent_node;
+    ModelNode* parent_node = current_node->parent_node;
 
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);
-        if(parent_node != nullptr) {
-            parent_node->getVector().push_back(current_node);
-        }
-        else {
-            root_node = current_node.get();
-        }
-        
+        parent_node->getVector().push_back(current_node);
+
     }
     else {//inside object
-        ModelNode::hashmap& thisHmap = parent_node->getMap();
-        thisHmap[aContainerName] = current_node;
+        if(parent_node != nullptr and !parent_node->isNull()) {
+            ModelNode::hashmap& thisHmap = parent_node->getMap();
+            thisHmap[aContainerName] = current_node;
+        }
+       
 //        std::cout << aContainerName << std::endl;
     }
  
@@ -214,10 +221,10 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 
 //		DBG(" " << (aType == Element::object ? "}" : "]"));
         
-        if(current_node.get()->parent_node == nullptr) {
+        if(current_node.get()->isNull()) {
             return false;
         }
-        current_node = current_node.get()->parent_node;
+        current_node = (*(current_node.get()->parent_node));
 		return true;
 	}
 

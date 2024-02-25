@@ -28,6 +28,7 @@ namespace ECE141 {
 		// Sometimes a node holds a list of other nodes (list)
 		// Sometimes a node holds a collection key-value pairs, where the value is a node (an object)
     public:
+        ModelNode* parent_node;
         friend class ModelTest;
         friend class Model;
         using hashmap = std::unordered_map<std::string, std::shared_ptr<ModelNode>>;
@@ -40,6 +41,9 @@ namespace ECE141 {
             
         }
         
+        
+        ModelNode(myVariant aVar, ModelNode* p_node): aNode(aVar), parent_node(p_node) {}
+        
         ModelNode(myVariant aVar): aNode(aVar), parent_node(nullptr) {}
         
         ModelNode(const ModelNode& aCopy) {*this = aCopy;}
@@ -50,12 +54,12 @@ namespace ECE141 {
             
         }
         
-        
-        ModelNode(vec_ptr value, std::shared_ptr<ModelNode> p_node): aNode(value), parent_node(p_node.get()) {}
-        
-        ModelNode(hashmap value,  std::shared_ptr<ModelNode> p_node): aNode(value), parent_node(p_node.get()) {
-            
-        }
+//        
+//        ModelNode(vec_ptr value, ModelNode* p_node): aNode(value), parent_node(p_node) {}
+//        
+//        ModelNode(hashmap value,  ModelNode* p_node): aNode(value), parent_node(p_node) {
+//            
+//        }
         
         double getNumberValue();
         
@@ -74,7 +78,7 @@ namespace ECE141 {
 
     protected:
         myVariant aNode;
-        std::shared_ptr<ModelNode> parent_node;
+        
         
 	};
 
@@ -108,7 +112,7 @@ namespace ECE141 {
 		bool openContainer(const std::string &aKey, Element aType) override;
 		bool closeContainer(const std::string &aKey, Element aType) override;
         
-        std::shared_ptr<ModelNode> current_node = std::make_shared<ModelNode>(null_obj());
+        ModelNode* current_node = nullptr;
         
          
 	};
