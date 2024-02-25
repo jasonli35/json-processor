@@ -19,6 +19,16 @@ namespace ECE141 {
 
 	Model::Model() {}
 
+Model::~Model() {
+    if(current_node != nullptr) {
+        delete current_node;
+        
+    }
+    if(root_node != nullptr) {
+        delete root_node;
+    }
+}
+
 	Model::Model(const Model& aModel) {
         *this = aModel;
 	}
@@ -129,7 +139,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
 		
 		// Print statement for debugging, remove after implementation
 //		DBG("\t'" << aKey << "' : '" << aValue << "'");
-        ModelNode::hashmap thisHmap = std::get<ModelNode::hashmap>((*current_node)());
+        ModelNode::hashmap& thisHmap = current_node->getMap();
         
         if(isAstring(aType)) {
             ModelNode insertStringNode(aValue);
@@ -176,38 +186,34 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     
     ModelNode::hashmap new_hmap = ModelNode::hashmap(ModelNode::hashmap());
     if(current_node == nullptr) {
-        current_node = std::make_shared<ModelNode>(ModelNode(new_hmap));
-        root_node = current_node.get();
-   
-        
+        current_node = new ModelNode(new_hmap);
+        root_node = current_node;
         return true;
     }
 
     if(aType == Element::object) {
-       
-        current_node = std::make_shared<ModelNode>(ModelNode(new_hmap));
+        current_node = new ModelNode(new_hmap, current_node);
     }
     else if(aType ==  Element::array) {
-        //ModelNode(const std::vector<ModelNode> value, std::unique_ptr<ModelNode> parent_node = nullptr): aNode(value)
-//        aNewNode = std::make_shared<ModelNode>(ModelNode(new_vec_ptr, current_node));
         ModelNode::vec_ptr new_vec_ptr = ModelNode::vec_ptr(ModelNode::vec_ptr());
-        current_node = std::make_shared<ModelNode>(ModelNode(new_vec_ptr, current_node.get()));
+        current_node = new ModelNode(new_vec_ptr, current_node);
     }
     else {
         return false;
     }
     
     ModelNode* parent_node = current_node->parent_node;
-
+    
+    std::shared_ptr<ModelNode> current_ptr = std::shared_ptr<ModelNode>(current_node);
     if(aContainerName.empty()) {//inside list
         //addItem(aNewNode, aType);
-        parent_node->getVector().push_back(current_node);
+        parent_node->getVector().push_back(current_ptr);
 
     }
     else {//inside object
         if(parent_node != nullptr and !parent_node->isNull()) {
             ModelNode::hashmap& thisHmap = parent_node->getMap();
-            thisHmap[aContainerName] = current_node;
+            thisHmap[aContainerName] = current_ptr;
         }
        
 //        std::cout << aContainerName << std::endl;
@@ -221,10 +227,10 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 
 //		DBG(" " << (aType == Element::object ? "}" : "]"));
         
-        if(current_node.get()->isNull()) {
+        if(current_node == nullptr or current_node->isNull()) {
             return false;
         }
-        current_node = (*(current_node.get()->parent_node));
+        current_node = current_node->parent_node;
 		return true;
 	}
 
@@ -232,24 +238,15 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 	// ---ModelQuery---
         
 	ModelQuery::ModelQuery(Model &aModel) : model(aModel) {
-        if(aModel().isNull()) {
+        if(model.root_node->isNull()) {
             std::cerr << "The Model is null" << std::endl;
         }
-        bool holdObj = aModel().isObj();
-        bool holdVec = aModel().isVec();
-        if(!(holdObj or holdVec)) {
-            std::cerr << "This is not anContainer" << std::endl;
+        current_node = model.root_node;
+        for (const auto& kVpair : aModel.root_node->getMap()) {
+            matching_set_obj.insert(kVpair.first);
         }
-        if(holdVec) {
-            for(size_t i = 0; i < aModel().getVector().size(); i++) {
-                matching_set_list.insert(i);
-            }
-        }
-        if(holdObj) {
-            for (const auto& kVpair : aModel().getMap()) {
-                matching_set_obj.insert(kVpair.first);
-            }
-        }
+
+        
     }
     
     const char period = '.';
@@ -267,7 +264,7 @@ ModelNode* ModelQuery::handleQueryRequest(std::string aQuery, ModelNode* current
         ModelNode::hashmap currentMap = current_mNode->getMap();
         auto it = currentMap.find(key);
         if(it == currentMap.end()) {
-            throw std::runtime_error("Error occurred: key: " + key + " not found in the currently object");
+            return nullptr;
         }
         else {
             result_node = (it->second).get();
@@ -277,7 +274,7 @@ ModelNode* ModelQuery::handleQueryRequest(std::string aQuery, ModelNode* current
         size_t index = std::stoi(aQuery);
         ModelNode::vec_ptr aVec = model().getVector();
         if(index < 0 or aVec.size() <= index) {
-            throw std::runtime_error("Error occurred: index: " + std::to_string(index) + " is out of bound in the currently object");
+            return nullptr;
         }
         else {
             result_node = aVec[index].get();
@@ -287,34 +284,11 @@ ModelNode* ModelQuery::handleQueryRequest(std::string aQuery, ModelNode* current
     return result_node;
 }
         
-ModelNode::vec_ptr ModelNode::getVector() {
+ModelNode::vec_ptr& ModelNode::getVector() {
     return std::get<ModelNode::vec_ptr>(aNode);
 }
 
 ModelNode::hashmap& ModelNode::getMap() {
-    //using myVariant = std::variant<null_obj, bool, long, double, std::string, std::vector<ModelNode>, hashmap>
-    
-//    if(std::holds_alternative<null_obj>(aNode)) {
-//        
-//    }
-//    if(std::holds_alternative<bool>(aNode)){
-//        
-//    }
-//    if(std::holds_alternative<long>(aNode)){
-//        
-//    }
-//    if(std::holds_alternative<double>(aNode)){
-//        
-//    }
-//    if(std::holds_alternative<std::string>(aNode)){
-//        
-//    }
-//    if(std::holds_alternative<hashmap>(aNode)){
-//        
-//    }
-//    if(std::holds_alternative<std::vector<ModelNode>>(aNode)){
-//        
-//    }
     
     return std::get<ModelNode::hashmap>(get_variant());
 }
@@ -329,7 +303,10 @@ bool ModelNode::isVec() {
         
 
         
-ModelNode Model::operator()(){
+ModelNode& Model::operator()(){
+    if(current_node == nullptr) {
+        throw std::runtime_error("it is empty");
+    }
     return *current_node;
 }
         
@@ -340,11 +317,11 @@ ModelNode Model::operator()(){
         
         std:: stringstream sStream(aQuery);
         std::string nextQuery;
-        ModelNode* current_node = model.root_node;
-        while (std::getline(sStream, nextQuery, period)) {
+
+        while (current_node != nullptr and std::getline(sStream, nextQuery, period)) {
             current_node = handleQueryRequest(nextQuery, current_node);
         }
-        
+
 		return *this;
 	}
 
@@ -407,7 +384,6 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 
 	size_t ModelQuery::count() {
 //		DBG("count()");
-
 		return std::max(matching_set_obj.size(), matching_set_list.size());
 	}
 
@@ -420,12 +396,73 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
         }
 		return result;
 	}
+    // using myVariant = std::variant<null_obj, bool, long, double, std::string, vec_ptr, hashmap>;
+    struct getVariantVisistor {
+        std::string operator()(null_obj value) {
+            return std::string("null");
+        }
+        std::string operator()(bool value) {
+            return std::string(value ? "true" : "false");
+        }
+        std::string operator()(long value) {
+            return std::to_string(value);
+        }
+
+        std::string operator()(double value) {
+            return doubleToString(value) ;
+        }
+
+        std::string operator()(const std::string& value) {
+            return value;
+        }
+        std::string operator()(const ModelNode::vec_ptr value) {
+            return std::string("vector place holder");
+        }
+        std::string operator()(const ModelNode::hashmap value) {
+            return std::string("hashmap place holder");
+        }
+
+    };
 
 	std::optional<std::string> ModelQuery::get(const std::string& aKeyOrIndex) {
 		DBG("get(" << aKeyOrIndex << ")");
-		TODO;
+        if (current_node == nullptr) {
+            return std::nullopt;
+        }
 
-		return std::nullopt;
+        std::stringstream ss;
+
+        if (current_node->isObj()) { // If current node is an object
+            auto& obj = current_node->getMap();
+            if (aKeyOrIndex == "*") { // Handle wildcard character
+
+                for (const auto& pair : obj) {
+                    ss << pair.first << ": " << std::visit(getVariantVisistor{} ,pair.second.get()->get_variant());
+                }
+            } else { // Handle specific key
+                auto it = obj.find(aKeyOrIndex);
+                if (it != obj.end()) {
+                    ss << aKeyOrIndex << ": " << std::visit(getVariantVisistor{}, it->second.get()->get_variant());
+                } else {
+                    return std::nullopt;
+                }
+            }
+        } else if (current_node->isVec()) { // If current node is a list
+            auto& vec = current_node->getVector();
+            if (aKeyOrIndex == "*") { // Handle wildcard character
+                for (const auto& node : vec) {
+                    ss << std::visit(getVariantVisistor{} ,node.get()->get_variant()) << "\n";
+                }
+            } else { // Handle specific index
+                int index = std::stoi(aKeyOrIndex);
+                if (index >= 0 && index < vec.size()) {
+                    ss << std::visit(getVariantVisistor{} ,vec[index].get()->get_variant());
+                } else {
+                    return std::nullopt;
+                }
+            }
+        }
+        return ss.str();
 	}
 
 } // namespace ECE141

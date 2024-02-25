@@ -12,7 +12,7 @@
 #include <variant>
 #include "Filter.h"
 #include <map>
-
+#include "Formatting.h"
 
 
 namespace ECE141 {
@@ -37,11 +37,9 @@ namespace ECE141 {
         
         
         
-        ModelNode() : aNode(null_obj()), parent_node(nullptr) {
+        ModelNode() : aNode(null_obj()), parent_node(nullptr) {}
             
-        }
-        
-        
+
         ModelNode(myVariant aVar, ModelNode* p_node): aNode(aVar), parent_node(p_node) {}
         
         ModelNode(myVariant aVar): aNode(aVar), parent_node(nullptr) {}
@@ -74,7 +72,7 @@ namespace ECE141 {
         myVariant operator()(){return aNode;}
         
         hashmap& getMap();
-        vec_ptr getVector();
+        vec_ptr& getVector();
 
     protected:
         myVariant aNode;
@@ -89,8 +87,10 @@ namespace ECE141 {
 	public:
         ModelNode* root_node = nullptr;
 		Model();
-		~Model() override = default;
+		~Model();
 		Model(const Model& aModel);
+
+        Model(ModelNode* node_ptr): root_node(node_ptr) {}
 		Model &operator=(const Model& aModel);
         
 		ModelQuery createQuery();
@@ -102,7 +102,7 @@ namespace ECE141 {
 
         
         
-        ModelNode operator()();
+        ModelNode& operator()();
         
         friend class ModelTest;
 	protected:
@@ -150,7 +150,7 @@ namespace ECE141 {
         std::unordered_set<size_t> matching_set_list;
         using filterOpt = void(*)(std::string, std::string, ModelQuery&);
         static std::map<std::string, ModelQuery::filterOpt> handleFilterOpts;
-        
+        ModelNode* current_node;
     
 	};
 
