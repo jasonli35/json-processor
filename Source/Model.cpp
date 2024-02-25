@@ -142,7 +142,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
         ModelNode::hashmap& thisHmap = current_node->getMap();
         
         if(isAstring(aType)) {
-            ModelNode insertStringNode(aValue);
+            ModelNode insertStringNode("\"" + aValue + "\"");
             thisHmap[aKey] = std::make_shared<ModelNode>(insertStringNode);
         }
         else if(isConstant(aType)){
@@ -159,7 +159,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
 	bool Model::addItem(const std::string& aValue, Element aType) {
 	
 		// Print statement for debugging, remove after implementation
-//		DBG("\t'" << aValue << "'");
+		DBG("\t'" << aValue << "'");
         ModelNode insert_node;
         if(isAstring(aType)) {
             insert_node = ModelNode(aValue);
@@ -171,7 +171,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
             return false;
         }
         
-        ModelNode::vec_ptr current_vec = current_node->getVector();
+        ModelNode::vec_ptr& current_vec = current_node->getVector();
 
         current_vec.push_back(std::make_shared<ModelNode>(insert_node));
 		return true;
@@ -241,12 +241,9 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
         if(model.root_node->isNull()) {
             std::cerr << "The Model is null" << std::endl;
         }
-        current_node = model.root_node;
-        for (const auto& kVpair : aModel.root_node->getMap()) {
-            matching_set_obj.insert(kVpair.first);
-        }
+        root = model.root_node;
+        update_matching();
 
-        
     }
     
     const char period = '.';
@@ -309,7 +306,23 @@ ModelNode& Model::operator()(){
     }
     return *current_node;
 }
-        
+
+    void ModelQuery::update_matching() {
+        matching_set_obj.clear();
+        matching_set_list.clear();
+        if(current_node != nullptr){
+            if(current_node->isObj()) {
+                for (const auto& kVpair : current_node->getMap()) {
+                    matching_set_obj.insert(kVpair.first);
+                }
+            }
+            if(current_node->isVec()) {
+                for (size_t i = 0; i < current_node->getVector().size(); ++i) {
+                    matching_set_list.insert(i);
+                }
+            }
+        }
+    }
 
 	ModelQuery& ModelQuery::select(const std::string& aQuery) {
 
@@ -317,10 +330,11 @@ ModelNode& Model::operator()(){
         
         std:: stringstream sStream(aQuery);
         std::string nextQuery;
-
+        current_node = root;
         while (current_node != nullptr and std::getline(sStream, nextQuery, period)) {
             current_node = handleQueryRequest(nextQuery, current_node);
         }
+        update_matching();
 
 		return *this;
 	}
@@ -390,7 +404,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 	double ModelQuery::sum() {
 		DBG("sum()");
         double result = 0;
-        std::vector<std::shared_ptr<ModelNode>> holdingVec = model().getVector();
+        std::vector<std::shared_ptr<ModelNode>> holdingVec = current_node->getVector();
         for(size_t index: matching_set_list) {
             result += holdingVec[index].get()->getNumberValue();
         }
@@ -424,6 +438,8 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 
     };
 
+
+
 	std::optional<std::string> ModelQuery::get(const std::string& aKeyOrIndex) {
 		DBG("get(" << aKeyOrIndex << ")");
         if (current_node == nullptr) {
@@ -435,14 +451,15 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
         if (current_node->isObj()) { // If current node is an object
             auto& obj = current_node->getMap();
             if (aKeyOrIndex == "*") { // Handle wildcard character
-
+                ss << "{";
                 for (const auto& pair : obj) {
                     ss << pair.first << ": " << std::visit(getVariantVisistor{} ,pair.second.get()->get_variant());
                 }
+                ss << "}";
             } else { // Handle specific key
-                auto it = obj.find(aKeyOrIndex);
+                auto it = obj.find(earaseQuote(aKeyOrIndex));
                 if (it != obj.end()) {
-                    ss << aKeyOrIndex << ": " << std::visit(getVariantVisistor{}, it->second.get()->get_variant());
+                    ss <<  std::visit(getVariantVisistor{}, it->second.get()->get_variant());
                 } else {
                     return std::nullopt;
                 }

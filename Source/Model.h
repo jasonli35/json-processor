@@ -76,12 +76,8 @@ namespace ECE141 {
 
     protected:
         myVariant aNode;
-        
-        
+
 	};
-
-
-
   
 	class Model : public JSONListener {
 	public:
@@ -127,7 +123,7 @@ namespace ECE141 {
         // ModelQuery has a Model so that you can query
         // get Something search the Model for the something
 
-
+        void update_matching();
 		// ---Traversal---
 		ModelQuery& select(const std::string& aQuery);
 
@@ -151,6 +147,7 @@ namespace ECE141 {
         using filterOpt = void(*)(std::string, std::string, ModelQuery&);
         static std::map<std::string, ModelQuery::filterOpt> handleFilterOpts;
         ModelNode* current_node;
+        ModelNode* root;
     
 	};
 
