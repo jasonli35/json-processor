@@ -14,6 +14,7 @@
 #include <map>
 #include "Formatting.h"
 #include <memory>
+#include <vector>
 
 
 namespace ECE141 {
