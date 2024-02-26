@@ -93,19 +93,19 @@ struct GetNumberVisitor {
     double operator()(const long& aNum) const {
         return static_cast<double>(aNum);
     }
-    double operator()(null_obj value) const { //how can this be all datatype
+    double operator()(null_obj) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type null_obj is not number value");
     }
-    double operator()(bool value) const { //how can this be all datatype
+    double operator()(bool) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type bool is not number value");
     }
-    double operator()(std::string value) const { //how can this be all datatype
+    double operator()(std::string) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type string is not number value");
     }
-    double operator()(ModelNode::vec_ptr value) const { //how can this be all datatype
+    double operator()(ModelNode::vec_ptr) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type ModelNode::vec_ptr is not number value");
     }
-    double operator()(ModelNode::hashmap value) const { //how can this be all datatype
+    double operator()(ModelNode::hashmap) const { //how can this be all datatype
         throw std::runtime_error("An error occurred! Type ModelNode::hashmap is not number value");
     }
 };
