@@ -13,6 +13,7 @@
 #include "Filter.h"
 #include <map>
 #include "Formatting.h"
+#include <memory>
 
 
 namespace ECE141 {
