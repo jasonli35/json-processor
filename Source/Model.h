@@ -7,7 +7,7 @@
 #include <string>
 #include <optional>
 #include "JSONParser.h"
-#include <unordered_set>
+#include <set>
 #include <list>
 #include <variant>
 #include "Filter.h"
@@ -142,8 +142,8 @@ namespace ECE141 {
 
 	protected:
 		Model &model;
-        std::unordered_set<std::string> matching_set_obj; //only use for model with object
-        std::unordered_set<size_t> matching_set_list;
+        std::set<std::string> matching_set_obj; //only use for model with object
+        std::set<size_t> matching_set_list;
         using filterOpt = void(*)(std::string, std::string, ModelQuery&);
         static std::map<std::string, ModelQuery::filterOpt> handleFilterOpts;
         ModelNode* current_node;

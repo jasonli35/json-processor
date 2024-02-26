@@ -26,7 +26,7 @@ struct Filter {
         } else if (oper == ">=") {
             return aNum >= compareIndex;
         } else if (oper == ">") {
-            return aNum != compareIndex;
+            return aNum > compareIndex;
         } else {
             std::cerr << "Error: Unsupported operator" << std::endl;
             return false;

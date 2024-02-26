@@ -242,6 +242,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
             std::cerr << "The Model is null" << std::endl;
         }
         root = model.root_node;
+        current_node = root;
         update_matching();
 
     }
@@ -345,7 +346,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
     {"key", [](std::string action, std::string value, ModelQuery& mQuery) {
         // Function for "key" operation
         if(action == "contains") {
-            std::unordered_set<std::string> key_set = mQuery.matching_set_obj;
+            std::set<std::string> key_set = mQuery.matching_set_obj;
             std::string stringToFind = earaseQuote(value);
             for (std::string aKey:  key_set) {
                 if(aKey.find(stringToFind) == std::string::npos) {
@@ -360,11 +361,13 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
     {"index", [](std::string action, std::string value, ModelQuery& mQuery) {
         // Function for "index" operation
         ECE141::Filter aFilter(std::stoi(value), action);
-        
-        for (size_t i = mQuery.current_node->getVector().size() - 1; i >= 0; i--) {
+
+        int i = (int) (mQuery.current_node->getVector().size() - 1);
+        while (i >= 0) {
             if (!aFilter.apply(i)) {
                 mQuery.matching_set_list.erase(i);
             }
+            --i;
         }
 
     }
@@ -459,8 +462,8 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
             auto& obj = current_node->getMap();
             if (aKeyOrIndex == "*") { // Handle wildcard character
                 ss << "{";
-                for (const auto& pair : obj) {
-                    ss << "\"" +  pair.first + "\"" << ": " << std::visit(getVariantVisistor{} ,pair.second.get()->get_variant()) << ",";
+                for (const std::string& key : matching_set_obj) {
+                    ss << "\"" +  key + "\"" << ": " << std::visit(getVariantVisistor{} , obj.at(key).get()->get_variant()) << ",";
                 }
                 ss << "}";
                 std::string result = ss.str();  // Convert to string
@@ -469,9 +472,10 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
                 }
                 return result;
             } else { // Handle specific key
-                auto it = obj.find(earaseQuote(aKeyOrIndex));
-                if (it != obj.end()) {
-                    ss <<  std::visit(getVariantVisistor{}, it->second.get()->get_variant());
+                std::string string_key = earaseQuote(aKeyOrIndex);
+                auto it = matching_set_obj.find(string_key);
+                if (it != matching_set_obj.end()) {
+                    ss <<  std::visit(getVariantVisistor{}, obj.at(string_key).get()->get_variant());
                 } else {
                     return std::nullopt;
                 }
@@ -479,12 +483,12 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
         } else if (current_node->isVec()) { // If current node is a list
             auto& vec = current_node->getVector();
             if (aKeyOrIndex == "*") { // Handle wildcard character
-                for (const auto& node : vec) {
-                    ss << std::visit(getVariantVisistor{} ,node.get()->get_variant()) << "\n";
+                for (const size_t& index : matching_set_list) {
+                    ss << std::visit(getVariantVisistor{} , vec[index].get()->get_variant()) << "\n";
                 }
             } else { // Handle specific index
-                int index = std::stoi(aKeyOrIndex);
-                if (index >= 0 && index < vec.size()) {
+                size_t index = std::stoi(aKeyOrIndex);
+                if (index >= 0 && index < vec.size() && matching_set_list.find(index) != matching_set_list.end()) {
                     ss << std::visit(getVariantVisistor{} ,vec[index].get()->get_variant());
                 } else {
                     return std::nullopt;
