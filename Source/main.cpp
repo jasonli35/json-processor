@@ -59,8 +59,8 @@ int main(const int argc, const char* argv[]) {
 
     // Add your testing code here!
 
-//    ECE141::ModelTest modelTest;
-//    modelTest.runAllTests();
+    ECE141::ModelTest modelTest;
+    modelTest.runAllTests();
 
     return 0;
 }

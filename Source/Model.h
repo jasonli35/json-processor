@@ -87,7 +87,7 @@ namespace ECE141 {
 		~Model();
 		Model(const Model& aModel);
 
-        Model(ModelNode* node_ptr): root_node(node_ptr) {}
+        Model(ModelNode* node_ptr);
 		Model &operator=(const Model& aModel);
         
 		ModelQuery createQuery();

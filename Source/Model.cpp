@@ -33,6 +33,8 @@ Model::~Model() {
         *this = aModel;
 	}
 
+    Model::Model(ModelNode* node_ptr): root_node(node_ptr) {}
+
 	Model &Model::operator=(const Model& aModel) {
         current_node = aModel.current_node;
 		return *this;
@@ -321,6 +323,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 	// ---ModelQuery---
         
 	ModelQuery::ModelQuery(Model &aModel) : model(aModel) {
+
         if(model.root_node->isNull()) {
             std::cerr << "The Model is null" << std::endl;
         }
