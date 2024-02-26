@@ -142,8 +142,9 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
         ModelNode::hashmap& thisHmap = current_node->getMap();
         
         if(isAstring(aType)) {
-            ModelNode insertStringNode("\"" + aValue + "\"");
-            thisHmap[aKey] = std::make_shared<ModelNode>(insertStringNode);
+            std::stringstream astream;
+            astream << "\"" << aValue << "\"";
+            thisHmap[aKey] = std::make_shared<ModelNode>(ModelNode(astream.str()));
         }
         else if(isConstant(aType)){
             ModelNode insertConsNode(getVariantNonQuoteType(aValue));
@@ -162,7 +163,9 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
 		DBG("\t'" << aValue << "'");
         ModelNode insert_node;
         if(isAstring(aType)) {
-            insert_node = ModelNode(aValue);
+            std::stringstream aStream;
+            aStream << "\"" << aValue << "\"";
+            insert_node = ModelNode(aStream.str());
         }
         else if(isConstant(aType)) {
             insert_node = getVariantNonQuoteType(aValue);
@@ -346,11 +349,13 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
     {"key", [](std::string action, std::string value, ModelQuery& mQuery) {
         // Function for "key" operation
         if(action == "contains") {
-            std::set<std::string> key_set = mQuery.matching_set_obj;
+            std::set<std::string>& key_set = mQuery.matching_set_obj;
             std::string stringToFind = earaseQuote(value);
-            for (std::string aKey:  key_set) {
-                if(aKey.find(stringToFind) == std::string::npos) {
-                    key_set.erase(aKey);
+            for (auto it = key_set.begin(); it != key_set.end(); /* no increment here */) {
+                if (it->find(stringToFind) == std::string::npos) {
+                    it = key_set.erase(it); // Erase element and update iterator
+                } else {
+                    ++it; // Increment iterator
                 }
             }
         }
