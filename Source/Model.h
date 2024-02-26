@@ -31,7 +31,7 @@ namespace ECE141 {
         ModelNode* parent_node;
         friend class ModelTest;
         friend class Model;
-        using hashmap = std::unordered_map<std::string, std::shared_ptr<ModelNode>>;
+        using hashmap = std::map<std::string, std::shared_ptr<ModelNode>>;
         using vec_ptr = std::vector<std::shared_ptr<ModelNode>>;
         using myVariant = std::variant<null_obj, bool, long, double, std::string, vec_ptr, hashmap>;
         

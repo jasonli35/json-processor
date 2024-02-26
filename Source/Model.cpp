@@ -138,7 +138,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
     bool Model::addKeyValuePair(const std::string& aKey, const std::string& aValue, Element aType) {
 		
 		// Print statement for debugging, remove after implementation
-//		DBG("\t'" << aKey << "' : '" << aValue << "'");
+		DBG("\t'" << aKey << "' : '" << aValue << "'");
         ModelNode::hashmap& thisHmap = current_node->getMap();
         
         if(isAstring(aType)) {
@@ -182,7 +182,7 @@ ModelNode& ModelNode::operator=(const ModelNode& aCopy) {
 bool Model::openContainer(const std::string& aContainerName, Element aType) {
     
     // Print statement for debugging, remove after implementation
-    //		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
+    		DBG((aContainerName.empty() ? "EMPTY" : aContainerName) << " " << (aType == Element::object ? "{" : "["));
     
     ModelNode::hashmap new_hmap = ModelNode::hashmap(ModelNode::hashmap());
     if(current_node == nullptr) {
@@ -225,7 +225,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
 }
 	bool Model::closeContainer(const std::string& aContainerName, Element aType) {
 
-//		DBG(" " << (aType == Element::object ? "}" : "]"));
+		DBG(" " << (aType == Element::object ? "}" : "]"));
         
         if(current_node == nullptr or current_node->isNull()) {
             return false;
@@ -269,7 +269,7 @@ ModelNode* ModelQuery::handleQueryRequest(std::string aQuery, ModelNode* current
     }
     else {
         size_t index = std::stoi(aQuery);
-        ModelNode::vec_ptr aVec = model().getVector();
+        ModelNode::vec_ptr aVec = current_node->getVector();
         if(index < 0 or aVec.size() <= index) {
             return nullptr;
         }
@@ -361,7 +361,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
         // Function for "index" operation
         ECE141::Filter aFilter(std::stoi(value), action);
         
-        for (size_t i = mQuery.model().getVector().size() - 1; i >= 0; i--) {
+        for (size_t i = mQuery.current_node->getVector().size() - 1; i >= 0; i--) {
             if (!aFilter.apply(i)) {
                 mQuery.matching_set_list.erase(i);
             }
@@ -372,8 +372,8 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 }};
     
 	ModelQuery& ModelQuery::filter(const std::string& aQuery) {
-//		DBG("filter(" << aQuery << ")");
-        ModelNode::myVariant container = model().get_variant();
+		DBG("filter(" << aQuery << ")");
+        ModelNode::myVariant container = current_node->get_variant();
         if(!std::holds_alternative<ModelNode::vec_ptr>(container) and !std::holds_alternative<ModelNode::hashmap>(container)) {
             std::cerr << "Model is not currently holding valid container" << std::endl;
         }
@@ -397,7 +397,8 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 	}
 
 	size_t ModelQuery::count() {
-//		DBG("count()");
+		DBG("count()");
+
 		return std::max(matching_set_obj.size(), matching_set_list.size());
 	}
 
@@ -433,7 +434,13 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
             return std::string("vector place holder");
         }
         std::string operator()(const ModelNode::hashmap value) {
-            return std::string("hashmap place holder");
+            std::stringstream ss;
+            ss << "{\"";
+            for (const auto& pair : value) {
+                ss << pair.first << "\":" <<  std::visit(getVariantVisistor{} ,pair.second.get()->get_variant());
+            }
+            ss << "}";
+            return ss.str();
         }
 
     };
@@ -453,9 +460,14 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
             if (aKeyOrIndex == "*") { // Handle wildcard character
                 ss << "{";
                 for (const auto& pair : obj) {
-                    ss << pair.first << ": " << std::visit(getVariantVisistor{} ,pair.second.get()->get_variant());
+                    ss << "\"" +  pair.first + "\"" << ": " << std::visit(getVariantVisistor{} ,pair.second.get()->get_variant()) << ",";
                 }
                 ss << "}";
+                std::string result = ss.str();  // Convert to string
+                if (result.size() > 1) {
+                    result.erase(result.size() - 2, 1);  // Remove second to last character
+                }
+                return result;
             } else { // Handle specific key
                 auto it = obj.find(earaseQuote(aKeyOrIndex));
                 if (it != obj.end()) {
