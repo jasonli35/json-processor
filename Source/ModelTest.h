@@ -1,15 +1,15 @@
+//////
+//////  ModelTest.h
+//////  Assignment_3
+//////
+//////  Created by Jason Li on 2024/2/15.
+//////
 ////
-////  ModelTest.h
-////  Assignment_3
+////#pragma once
+////#include "Model.h"
+////#include <iterator>
+////#include <string>
 ////
-////  Created by Jason Li on 2024/2/15.
-////
-//
-//#pragma once
-//#include "Model.h"
-//#include <iterator>
-//#include <string>
-//
 //namespace ECE141 {
 //class ModelTest: public ECE141::Testable {
 //public:
@@ -20,14 +20,14 @@
 //
 //    using Callable = bool (ModelTest::*)();
 //    std::map<std::string, Callable> kList {
-////        {"test model getVariantNonQuoteType double", &ModelTest::test_model_getVariantNonQuoteType_double},
-////        {"test model getVariantNonQuoteType long", &ModelTest::test_model_getVariantNonQuoteType_long},
-////        {"test model getVariantNonQuoteType null", &ModelTest::test_model_getVariantNonQuoteType_null},
-////        {"test model getVariantNonQuoteType boolean", &ModelTest::test_model_getVariantNonQuoteType_bool},
+//        {"test model getVariantNonQuoteType double", &ModelTest::test_model_getVariantNonQuoteType_double},
+//        {"test model getVariantNonQuoteType long", &ModelTest::test_model_getVariantNonQuoteType_long},
+//        {"test model getVariantNonQuoteType null", &ModelTest::test_model_getVariantNonQuoteType_null},
+//        {"test model getVariantNonQuoteType boolean", &ModelTest::test_model_getVariantNonQuoteType_bool},
 ////        {"test model addKeyValuePair double", &ModelTest::testAddKeyVal_double},
 ////        {"test model addKeyValuePair long", &ModelTest::testAddKeyVal_long},
 ////        {"test model addKeyValuePair null", &ModelTest::testAddKeyVal_null},
-////        {"test model addKeyValuePair null", &ModelTest::tryingfun},
+//
 //    };
 //    OptString getTestName(size_t anIndex) const override {
 //        size_t thePos{0};
@@ -39,13 +39,8 @@
 //        return std::nullopt;
 //
 //    }
-//    bool tryingfun() {
-//        const std::string& aString("abc");
-//        ECE141::ModelNode node(aString);
 //
-//        return true;
-//    }
-//
+////
 //    bool operator()(const std::string &aName) override {
 //        return kList.count(aName) ? (this->*kList[aName])() : false;
 //
@@ -93,11 +88,11 @@
 //        const std::string& aValue;
 //        const Element aType;
 //    };
-//
+////
 //    ModelNode::hashmap getMapFromVar(ModelNode::myVariant aVar) {
 //        return std::get<ModelNode::hashmap>(aVar);
 //    }
-//
+////
 //    template<typename T, typename Iterator>
 //    bool test_addKeyValuePair(Iterator begin, Iterator end) {
 ////        Model aModel;
@@ -119,28 +114,27 @@
 ////        }
 //        return true;
 ////    }
+//////
+////    bool testAddKeyVal_double() {
+////        Entry double_array[] = {{"key1", "1.2", Element::constant}, {"key2", "99999999.9", Element::constant}, {"key3", "0.9", Element::constant}, {"key4", "0.0", Element::constant}};
+////        return test_addKeyValuePair<double>(std::begin(double_array), std::end(double_array));
+////    }
 ////
-//    bool testAddKeyVal_double() {
-//        Entry double_array[] = {{"key1", "1.2", Element::constant}, {"key2", "99999999.9", Element::constant}, {"key3", "0.9", Element::constant}, {"key4", "0.0", Element::constant}};
-//        return test_addKeyValuePair<double>(std::begin(double_array), std::end(double_array));
-//    }
-//
-//    bool testAddKeyVal_long() {
-//        Entry double_array[] = {{"key1", "0", Element::constant}, {"key2", "1", Element::constant}, {"key3", "999999", Element::constant}};
-//        return test_addKeyValuePair<long>(std::begin(double_array), std::end(double_array));
-//    }
-//
-//    bool testAddKeyVal_null() {
-////        Model aModel;
-////        aModel.addKeyValuePair("akey", "null",  Element::constant);
-////        ECE141::ModelNode::myVariant root_Var = aModel->current_node.get_variant();
+////    bool testAddKeyVal_long() {
+////        Entry double_array[] = {{"key1", "0", Element::constant}, {"key2", "1", Element::constant}, {"key3", "999999", Element::constant}};
+////        return test_addKeyValuePair<long>(std::begin(double_array), std::end(double_array));
+////    }
 ////
-////        if(!std::holds_alternative<null_obj>(getMapFromVar(root_Var).at("akey").get_variant())) {
-////            return false;
-////        }
-//        return true;
-//    }
-//
+////    bool testAddKeyVal_null() {
+//////        Model aModel;
+//////        aModel.addKeyValuePair("akey", "null",  Element::constant);
+//////        ECE141::ModelNode::myVariant root_Var = aModel->current_node.get_variant();
+//////
+//////        if(!std::holds_alternative<null_obj>(getMapFromVar(root_Var).at("akey").get_variant())) {
+//////            return false;
+//////        }
+////        return true;
+////    }
+////
 //};
 //}
-//
