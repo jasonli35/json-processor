@@ -223,7 +223,7 @@ bool Model::openContainer(const std::string& aContainerName, Element aType) {
     //to create is object or list
     
 }
-	bool Model::closeContainer(const std::string& aContainerName, Element aType) {
+	bool Model::closeContainer(const std::string&, Element aType) {
 
 		DBG(" " << (aType == Element::object ? "}" : "]"));
         
@@ -271,7 +271,7 @@ ModelNode* ModelQuery::handleQueryRequest(std::string aQuery, ModelNode* current
     else {
         size_t index = std::stoi(aQuery);
         ModelNode::vec_ptr aVec = current_node->getVector();
-        if(index < 0 or aVec.size() <= index) {
+        if(aVec.size() <= index) {
             return nullptr;
         }
         else {
@@ -416,7 +416,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
 	}
     // using myVariant = std::variant<null_obj, bool, long, double, std::string, vec_ptr, hashmap>;
     struct getVariantVisistor {
-        std::string operator()(null_obj value) {
+        std::string operator()(null_obj) {
             return std::string("null");
         }
         std::string operator()(bool value) {
@@ -433,7 +433,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
         std::string operator()(const std::string& value) {
             return value;
         }
-        std::string operator()(const ModelNode::vec_ptr value) {
+        std::string operator()(const ModelNode::vec_ptr) {
             return std::string("vector place holder");
         }
         std::string operator()(const ModelNode::hashmap value) {
@@ -488,7 +488,7 @@ std::map<std::string, ModelQuery::filterOpt> ModelQuery::handleFilterOpts = {
                 }
             } else { // Handle specific index
                 size_t index = std::stoi(aKeyOrIndex);
-                if (index >= 0 && index < vec.size() && matching_set_list.find(index) != matching_set_list.end()) {
+                if (index < vec.size() && matching_set_list.find(index) != matching_set_list.end()) {
                     ss << std::visit(getVariantVisistor{} ,vec[index].get()->get_variant());
                 } else {
                     return std::nullopt;
