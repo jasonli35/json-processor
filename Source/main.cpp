@@ -60,8 +60,8 @@ int main(const int argc, const char* argv[]) {
     // Add your testing code here!
 //    const char* args[] = {"random", "basic"};
 //    runTest(2, args);
-    ECE141::ModelTest modelTest;
-    modelTest.runAllTests();
+//    ECE141::ModelTest modelTest;
+//    modelTest.runAllTests();
 
     return 0;
 }

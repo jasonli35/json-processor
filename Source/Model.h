@@ -37,14 +37,13 @@ namespace ECE141 {
         using vec_ptr = std::vector<std::shared_ptr<ModelNode>>;
         using myVariant = std::variant<null_obj, bool, long, double, std::string, vec_ptr, hashmap>;
         
-        
-        
-        ModelNode() : aNode(null_obj()), parent_node(nullptr) {}
+
+        ModelNode() : parent_node(nullptr), aNode(null_obj()) {}
             
 
-        ModelNode(myVariant aVar, ModelNode* p_node): aNode(aVar), parent_node(p_node) {}
+        ModelNode(myVariant aVar, ModelNode* p_node): parent_node(p_node), aNode(aVar) {}
         
-        ModelNode(myVariant aVar): aNode(aVar), parent_node(nullptr) {}
+        ModelNode(myVariant aVar): parent_node(nullptr), aNode(aVar) {}
         
         ModelNode(const ModelNode& aCopy) {*this = aCopy;}
         
